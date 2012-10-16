@@ -290,10 +290,13 @@ def findEpisode(episode, manualSearch=False):
             continue
 
         didSearch = True
-
+        
         # skip non-tv crap
         curFoundResults = filter(lambda x: show_name_helpers.filterBadReleases(x.name) and show_name_helpers.isGoodResult(x.name, episode.show), curFoundResults)
-
+        
+        # ignore thepiretebay results
+        curFoundResults = filter(lambda x: "thepiratebay.org/" not in x.url, curFoundResults) 
+        
         # loop all results and see if any of them are good enough that we can stop searching
         done_searching = False
         for cur_result in curFoundResults:
