@@ -42,7 +42,7 @@ from sickbeard import postProcessor
 from sickbeard import encodingKludge as ek
 
 from common import Quality, Overview
-from common import DOWNLOADED, SNATCHED, SNATCHED_PROPER, ARCHIVED, IGNORED, UNAIRED, WANTED, SKIPPED, UNKNOWN
+from common import DOWNLOADED, SNATCHED, SNATCHED_PROPER, ARCHIVED, IGNORED, UNAIRED, WANTED, SKIPPED, UNKNOWN, WAITING
 from common import NAMING_DUPLICATE, NAMING_EXTEND, NAMING_LIMITED_EXTEND, NAMING_SEPARATED_REPEAT
 
 class TVShow(object):
@@ -902,6 +902,8 @@ class TVShow(object):
 
         if epStatus == WANTED:
             return Overview.WANTED
+        if epStatus == WAITING:
+            return Overview.WAITING
         elif epStatus in (UNAIRED, UNKNOWN):
             return Overview.UNAIRED
         elif epStatus in (SKIPPED, IGNORED):

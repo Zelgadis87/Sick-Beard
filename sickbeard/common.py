@@ -51,6 +51,7 @@ DOWNLOADED = 4 # qualified with quality
 SKIPPED = 5 # episodes we don't want
 ARCHIVED = 6 # episodes that you don't have locally (counts toward download completion stats)
 IGNORED = 7 # episodes that you don't want included in your download stats
+WAITING = 8 # episodes we don't have but want to get, but we are waiting to snatch for the previous episode to be completed
 SNATCHED_PROPER = 9 # qualified with quality
 
 NAMING_REPEAT = 1
@@ -214,7 +215,8 @@ class StatusStrings:
                               SNATCHED_PROPER: "Snatched (Proper)",
                               WANTED: "Wanted",
                               ARCHIVED: "Archived",
-                              IGNORED: "Ignored"}
+                              IGNORED: "Ignored",
+                              WAITING: "Waiting"}
 
     def __getitem__(self, name):
         if name in Quality.DOWNLOADED + Quality.SNATCHED + Quality.SNATCHED_PROPER:
@@ -237,8 +239,10 @@ class Overview:
     WANTED = WANTED # 3
     GOOD = 4
     SKIPPED = SKIPPED # 5
+    WAITING = WAITING
 
     overviewStrings = {SKIPPED: "skipped",
+                       WAITING: "waiting",
                        WANTED: "wanted",
                        QUAL: "qual",
                        GOOD: "good",

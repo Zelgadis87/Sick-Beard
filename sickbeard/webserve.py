@@ -331,6 +331,7 @@ class Manage:
             epCounts = {}
             epCats = {}
             epCounts[Overview.SKIPPED] = 0
+            epCounts[Overview.WAITING] = 0
             epCounts[Overview.WANTED] = 0
             epCounts[Overview.QUAL] = 0
             epCounts[Overview.GOOD] = 0
@@ -2307,6 +2308,7 @@ class Home:
         epCounts = {}
         epCats = {}
         epCounts[Overview.SKIPPED] = 0
+        epCounts[Overview.WAITING] = 0
         epCounts[Overview.WANTED] = 0
         epCounts[Overview.QUAL] = 0
         epCounts[Overview.GOOD] = 0

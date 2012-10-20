@@ -95,7 +95,7 @@ replace with: <b><%=", ".join([Quality.qualityStrings[x] for x in bestQualities]
 <div class="float-left">
 Change selected episodes to 
 <select id="statusSelect">
-#for $curStatus in [$WANTED, $SKIPPED, $ARCHIVED, $IGNORED] + $Quality.DOWNLOADED:
+#for $curStatus in [$WANTED, $WAITING, $SKIPPED, $ARCHIVED, $IGNORED] + $Quality.DOWNLOADED:
 #if $curStatus == $DOWNLOADED:
 #continue
 #end if
@@ -113,6 +113,7 @@ Change selected episodes to
 <div class="float-right clearfix" id="checkboxControls">
     <div style="padding-bottom: 5px;">
         <label for="wanted" class="checkbox inline wanted"><input type="checkbox" id="wanted" checked="checked" /> Wanted: <b>$epCounts[$Overview.WANTED]</b></label>
+        <label for="waiting" class="checkbox inline waiting"><input type="checkbox" id="waiting" checked="checked" /> Waiting: <b>$epCounts[$Overview.WAITING]</b></label>
         <label for="qual" class="checkbox inline qual"><input type="checkbox" id="qual" checked="checked" /> Low Quality: <b>$epCounts[$Overview.QUAL]</b></label>
         <label for="good" class="checkbox inline good"><input type="checkbox" id="good" checked="checked" /> Downloaded: <b>$epCounts[$Overview.GOOD]</b></label>
         <label for="skipped" class="checkbox inline skipped"><input type="checkbox" id="skipped" checked="checked" /> Skipped: <b>$epCounts[$Overview.SKIPPED]</b></label>
