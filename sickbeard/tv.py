@@ -710,6 +710,26 @@ class TVShow(object):
 
         # TODO: need to validate the input, I'm assuming it's good until then
 
+    def getQueuedEpisodes(self, limit=1):
+        """ 
+        Fetches the first 'limit' episodes in chronological time of this TVShow 
+        that are either waiting, wanted or snatched.
+        """
+        
+        myDB = db.DBConnection()
+        query = "SELECT season, episode FROM tv_episodes WHERE showid = ? AND status IN (" + (",".join([str(x) for x in (Quality.SNATCHED + Quality.SNATCHED_PROPER + [WANTED, WAITING])])) + ") ORDER BY season ASC, episode ASC LIMIT ?"
+        params = [self.tvdbid, limit]
+        sqlResults = myDB.select(query, params)
+        
+        foundEps = []
+        if sqlResults == None or len(sqlResults) == 0:
+            logger.log(u"No episode to download found.")
+        else:
+            logger.log(u"Found "+str(len(sqlResults))+" episodes to download.")
+            for sqlEp in sqlResults:
+                curEp = self.getEpisode(int(sqlEp["season"]), int(sqlEp["episode"]))
+                foundEps.append(curEp)
+        return foundEps
 
     def nextEpisode(self):
 
