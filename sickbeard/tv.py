@@ -722,10 +722,7 @@ class TVShow(object):
         sqlResults = myDB.select(query, params)
         
         foundEps = []
-        if sqlResults == None or len(sqlResults) == 0:
-            logger.log(u"No episode to download found.")
-        else:
-            logger.log(u"Found "+str(len(sqlResults))+" episodes to download.")
+        if sqlResults != None and len(sqlResults) > 0:
             for sqlEp in sqlResults:
                 curEp = self.getEpisode(int(sqlEp["season"]), int(sqlEp["episode"]))
                 foundEps.append(curEp)
