@@ -84,6 +84,16 @@
             6: { sorter: false }
         }
     });
+    
+    jQuery("a.link-set-wanted").click( function(e) {
+        jQuery.ajax({
+            url: this.href,
+            complete: function(){ location.reload(); },
+        });
+        
+        e.preventDefault();
+        return false;
+    });
 
 });
 //-->
@@ -194,7 +204,7 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
                     #else if $next.status in $Quality.SNATCHED or $next.status in $Quality.SNATCHED_PROPER:
                         Downloading
                     #else if $next.status == 8:
-                        Queued
+                        <a href="$sbRoot/home/setStatus?show=${curShow.tvdbid}&eps=${next.season}x${next.episode}&status=${WANTED}" class="link-set-wanted" title="Click to download this episode">Queued</a>
                     #end if
                 </td>
             </tr>
