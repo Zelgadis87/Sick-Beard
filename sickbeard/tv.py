@@ -717,7 +717,7 @@ class TVShow(object):
         """
         
         myDB = db.DBConnection()
-        query = "SELECT season, episode FROM tv_episodes WHERE showid = ? AND status IN (" + (",".join([str(x) for x in (Quality.SNATCHED + Quality.SNATCHED_PROPER + [WANTED, WAITING])])) + ") ORDER BY season ASC, episode ASC LIMIT ?"
+        query = "SELECT season, episode FROM tv_episodes WHERE showid = ? AND status IN (" + (",".join([str(x) for x in (Quality.SNATCHED + Quality.SNATCHED_PROPER + [WANTED, WAITING])])) + ") AND season > 0 ORDER BY season ASC, episode ASC LIMIT ?"
         params = [self.tvdbid, limit]
         sqlResults = myDB.select(query, params)
         
