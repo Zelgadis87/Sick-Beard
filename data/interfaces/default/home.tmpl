@@ -99,7 +99,7 @@
         <th>Quality</th>
         <th>Downloads</th>
         <th>Active</th>
-        <th>Next</th>
+        <th class="nowrap" style="width:25%">Next Episodes</th>
         <th>Status</th>
     </tr>
   </thead>
@@ -181,7 +181,26 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
         </script>
     </td>
     <td align="center"><img src="$sbRoot/images/#if int($curShow.paused) == 0 and $curShow.status != "Ended" then "yes16.png\" alt=\"Y\"" else "no16.png\" alt=\"N\""# width="16" height="16" /></td>
-    <td align="center"></td>
+    <td align="center">
+        #set $nextEps = $curShow.getQueuedEpisodes(2)
+        <table style="width:90%;padding:0 5%">
+        #for $next in $nextEps:
+            <tr>
+                <td style="width:50px;border-style:none">${next.season}x${next.episode}</td>
+                <td style="text-align:center;border-style:none">$next.name</td>
+                <td style="width:100px;text-align:right;border-style:none">
+                    #if $next.status == 3:
+                        Wanted
+                    #else if $next.status in $Quality.SNATCHED or $next.status in $Quality.SNATCHED_PROPER:
+                        Downloading
+                    #else if $next.status == 8:
+                        Queued
+                    #end if
+                </td>
+            </tr>
+        #end for
+        </table>
+    </td>
     <td align="center">$curShow.status</td>
   </tr>
 
