@@ -1212,7 +1212,7 @@ class TVEpisode(object):
             # if we don't have the file and the airdate is in the past
             else:
                 if self.status == UNAIRED:
-                    self.status = WANTED
+                    self.status = WAITING
 
                 # if we somehow are still UNKNOWN then just skip it
                 elif self.status == UNKNOWN:

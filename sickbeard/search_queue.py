@@ -161,10 +161,7 @@ class RSSSearchQueueItem(generic_queue.QueueItem):
 
             ep = show.getEpisode(sqlEp["season"], sqlEp["episode"])
             with ep.lock:
-                if ep.show.paused:
-                    ep.status = common.SKIPPED
-                else:
-                    ep.status = common.WANTED
+                ep.status = common.WAITING
                 ep.saveToDB()
 
 class BacklogQueueItem(generic_queue.QueueItem):
