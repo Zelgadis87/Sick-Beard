@@ -216,7 +216,7 @@ class StatusStrings:
                               WANTED: "Wanted",
                               ARCHIVED: "Archived",
                               IGNORED: "Ignored",
-                              WAITING: "Waiting"}
+                              WAITING: "Queued"}
 
     def __getitem__(self, name):
         if name in Quality.DOWNLOADED + Quality.SNATCHED + Quality.SNATCHED_PROPER:

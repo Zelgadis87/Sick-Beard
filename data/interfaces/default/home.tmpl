@@ -198,11 +198,11 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
                     <td colspan="2" style="border-style:none">New episodes will be marked as:</td>
                     <td style="width:100px;text-align:right;border-style:none">
                         #if $curShow.paused: 
-                            Ignored
+                            $statusStrings[$IGNORED]
                         #else if $curShow.auto_download:
-                            Wanted
+                            $statusStrings[$WANTED]
                         #else:
-                            Queued
+                            $statusStrings[$WAITING]
                         #end if
                     </td>
                 </tr>
@@ -213,12 +213,10 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
                 <td style="width:50px;border-style:none">${next.season}x${next.episode}</td>
                 <td style="text-align:center;border-style:none">$next.name</td>
                 <td style="width:100px;text-align:right;border-style:none">
-                    #if $next.status == 3:
-                        Wanted
-                    #else if $next.status in $Quality.SNATCHED or $next.status in $Quality.SNATCHED_PROPER:
-                        Downloading
-                    #else if $next.status == 8:
-                        <a href="$sbRoot/home/setStatus?show=${curShow.tvdbid}&eps=${next.season}x${next.episode}&status=${WANTED}" class="link-set-wanted" title="Click to download this episode">Queued</a>
+                    #if $next.status == 8:
+                        <a href="$sbRoot/home/setStatus?show=${curShow.tvdbid}&eps=${next.season}x${next.episode}&status=${WANTED}" class="link-set-wanted" title="Click to download this episode">$statusStrings[$WAITING]</a>
+                    #else:
+                        $statusStrings[$next.status]
                     #end if
                 </td>
             </tr>
