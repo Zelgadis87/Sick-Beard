@@ -161,7 +161,12 @@ class RSSSearchQueueItem(generic_queue.QueueItem):
 
             ep = show.getEpisode(sqlEp["season"], sqlEp["episode"])
             with ep.lock:
-                ep.status = common.WAITING
+                if ep.show.paused:
+                    ep.status = common.IGNORED
+                elif ep.show.auto_download:
+                    ep.status = common.WANTED
+                else:
+                    ep.status = common.WAITING
                 ep.saveToDB()
 
 class BacklogQueueItem(generic_queue.QueueItem):

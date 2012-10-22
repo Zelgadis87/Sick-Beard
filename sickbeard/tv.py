@@ -65,6 +65,7 @@ class TVShow(object):
         self.airs = ""
         self.startyear = 0
         self.paused = 0
+        self.auto_download = 0
         self.air_by_date = 0
         self.lang = lang
 
@@ -605,6 +606,7 @@ class TVShow(object):
             self.quality = int(sqlResults[0]["quality"])
             self.flatten_folders = int(sqlResults[0]["flatten_folders"])
             self.paused = int(sqlResults[0]["paused"])
+            self.auto_download = int(sqlResults[0]["auto_download"])
 
             self._location = sqlResults[0]["location"]
 
@@ -838,6 +840,7 @@ class TVShow(object):
                         "status": self.status,
                         "flatten_folders": self.flatten_folders,
                         "paused": self.paused,
+                        "auto_download": self.auto_download,
                         "air_by_date": self.air_by_date,
                         "startyear": self.startyear,
                         "tvr_name": self.tvrname,
@@ -1211,12 +1214,14 @@ class TVEpisode(object):
                     self.status = UNAIRED
             # if we don't have the file and the airdate is in the past
             else:
-                if self.status == UNAIRED:
-                    self.status = WAITING
-
-                # if we somehow are still UNKNOWN then just skip it
-                elif self.status == UNKNOWN:
-                    self.status = SKIPPED
+                if self.status == UNAIRED or self.status == UNKNOWN:
+                    # If the episode is UNAIRED and the airdate has passed, OR the episode is new:
+                    if self.show.paused:
+                        self.status = IGNORED
+                    elif self.show.auto_download:
+                        self.status = WANTED
+                    else:
+                        self.status = WAITING
 
                 else:
                     logger.log(u"Not touching status because we have no ep file, the airdate is in the past, and the status is "+str(self.status), logger.DEBUG)

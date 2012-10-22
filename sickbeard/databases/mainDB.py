@@ -540,3 +540,10 @@ class RenameSeasonFolders(AddSizeAndSceneNameFields):
         self.connection.action("DROP TABLE tmp_tv_shows")
 
         self.incDBVersion()
+        
+class AutoDownload(InitialSchema):
+    def test(self):
+        return self.hasColumn("tv_shows", "auto_download")
+
+    def execute(self):
+        self.addColumn("tv_shows", "auto_download", default=1)
