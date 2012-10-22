@@ -193,6 +193,7 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
     <td align="center"><img src="$sbRoot/images/#if int($curShow.paused) == 0 and $curShow.status != "Ended" then "yes16.png\" alt=\"Y\"" else "no16.png\" alt=\"N\""# width="16" height="16" /></td>
     <td align="center">
         <table style="width:90%;padding:0 5%">
+            #set $nextEps = $curShow.getQueuedEpisodes(2)
             #if $curShow.status != "Ended":
                 <tr>
                     <td colspan="2" style="border-style:none">New episodes will be marked as:</td>
@@ -200,14 +201,21 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
                         #if $curShow.paused: 
                             $statusStrings[$IGNORED]
                         #else if $curShow.auto_download:
-                            $statusStrings[$WANTED]
+                            #if len($nextEps) > 0:
+                                <a style="color:red" href="$sbRoot/home/editShow?show=$curShow.tvdbid" title="Show is set to auto download new episodes; however, there are still episodes that are not yet downloaded.">$statusStrings[$WANTED]</a>
+                            #else: 
+                                $statusStrings[$WANTED] 
+                            #end if
                         #else:
-                            $statusStrings[$WAITING]
+                            #if len($nextEps) == 0:
+                                <a style="color:orange" href="$sbRoot/home/editShow?show=$curShow.tvdbid" title="Show is set to not auto download new episodes; however, there are no episodes left to be downloaded."' else '' #>$statusStrings[$WAITING]</a>
+                            #else:
+                                $statusStrings[$WAITING]
+                            #end if
                         #end if
                     </td>
                 </tr>
             #end if
-            #set $nextEps = $curShow.getQueuedEpisodes(2)
             #for $next in $nextEps:
             <tr>
                 <td style="width:50px;border-style:none">${next.season}x${next.episode}</td>
