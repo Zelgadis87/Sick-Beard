@@ -755,7 +755,15 @@ class PostProcessor(object):
 
         # if the file is priority then we're going to replace it even if it exists
         else:
-            self._log(u"This download is marked a priority download so I'm going to replace an existing file if I find one", logger.DEBUG)
+            alreadyHandledFile = self.file_path + ".HANDLED"
+            if alreadyHandledFile and ek.ek(os.path.isfile, alreadyHandledFile):
+                self._log(u"This download is marked a priority download but it has been marked as already handled, so we'll skip it", logger.DEBUG)
+                return False
+            
+            open(alreadyHandledFile, 'w').close()
+            self._log(u"This download is marked a priority download and it's hasn't been handled yet, so I'm going to replace an existing file if I find one", logger.DEBUG)
+            
+        
 
         # delete the existing file (and company)
         for cur_ep in [ep_obj] + ep_obj.relatedEps:
