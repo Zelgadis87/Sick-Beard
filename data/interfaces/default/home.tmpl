@@ -224,7 +224,7 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
                     #if $next.status == 8:
                         <a href="$sbRoot/home/setStatus?show=${curShow.tvdbid}&eps=${next.season}x${next.episode}&status=${WANTED}" class="link-set-wanted" title="Click to download this episode">$statusStrings[$WAITING]</a>
                     #else:
-                        $statusStrings[$next.status]
+                        $simpleStatusStrings[$next.status]
                     #end if
                 </td>
             </tr>

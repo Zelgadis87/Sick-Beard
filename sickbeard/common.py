@@ -233,6 +233,19 @@ class StatusStrings:
 
 statusStrings = StatusStrings()
 
+class SimpleStatusStrings(StatusStrings):
+    
+    def __getitem__(self, name):
+        if name in Quality.DOWNLOADED + Quality.SNATCHED + Quality.SNATCHED_PROPER:
+            status, quality = Quality.splitCompositeStatus(name)
+            if status == SNATCHED_PROPER:
+                status = SNATCHED;
+            return self.statusStrings[status]
+        else:
+            return self.statusStrings[name]
+        
+simpleStatusStrings = SimpleStatusStrings()
+
 class Overview:
     UNAIRED = UNAIRED # 1
     QUAL = 2
