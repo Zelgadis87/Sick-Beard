@@ -758,13 +758,19 @@ class PostProcessor(object):
             if self.is_proper:
                 alreadyHandledFile = self.file_path + ".HANDLED"
                 if alreadyHandledFile and ek.ek(os.path.isfile, alreadyHandledFile):
-                    self._log(u"This download is marked a priority download but it has been marked as already handled, so we'll skip it", logger.DEBUG)
+                    self._log(u"This download is marked as a proper but it has been marked as already handled, so we'll skip it", logger.DEBUG)
                     return False
                 
                 open(alreadyHandledFile, 'w').close()
                 self._log(u"This download is marked as a proper download and it hasn't been handled yet, so I'm going to replace an existing file if I find one", logger.DEBUG)
             else:
-                self._log(u"This download is marked a priority download, so I'm going to replace an existing file if I find one", logger.DEBUG)
+                alreadyHandledFile = self.file_path + ".HANDLED"
+                if alreadyHandledFile and ek.ek(os.path.isfile, alreadyHandledFile):
+                    self._log(u"This download is marked a priority download but it has been marked as already handled, so we'll skip it", logger.DEBUG)
+                    return False
+                
+                open(alreadyHandledFile, 'w').close()
+                self._log(u"This download is marked a priority download and it hasn't been handled yet, so I'm going to replace an existing file if I find one", logger.DEBUG)
             
         
 
