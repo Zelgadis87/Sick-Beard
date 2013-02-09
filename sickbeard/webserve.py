@@ -782,6 +782,10 @@ class ConfigSearch:
         	  	logger.log("Unknown search setting: " + key, logger.ERROR)
 
         # handle some special cases
+        sickbeard.USE_TORRENTS = 1 if postData.get('use_torrents') == "on" else 0
+        sickbeard.USE_NZBS = 1 if postData.get('use_nzbs') == "on" else 0
+        sickbeard.TORRENT_PAUSE = 1 if postData.get('torrent_pause') == "on" else 0
+        sickbeard.DOWLOAD_PROPERS = 1 if postData.get('download_propers') == "on" else 0
         sickbeard.USENET_RETENTION = int(postData.get('usenet_retention', 200))
 
         # this regex will match http or https urls or just a domain/address
@@ -1079,6 +1083,8 @@ class ConfigProviders:
                 sickbeard.DTT = curEnabled
             elif curProvider == 'torrentleech':
                 sickbeard.TORRENTLEECH = curEnabled
+            elif curProvider == 'publichd':
+                sickbeard.PUBLICHD = curEnabled
             elif curProvider == 'btn':
                 sickbeard.BTN = curEnabled
             elif curProvider in newznabProviderDict:
