@@ -194,6 +194,9 @@ def searchForNeededEpisodes():
 
         # pick a single result for each episode, respecting existing results
         for curEp in curFoundResults:
+        
+            if not curEp.status == common.WANTED:
+                logger.log(u"Episode " + curEp.prettyName() + " is not in the download queue. Ignoring all RSS items for it", logger.DEBUG)
 
             if curEp.show.paused:
                 logger.log(u"Show "+curEp.show.name+" is paused, ignoring all RSS items for "+curEp.prettyName(), logger.DEBUG)
