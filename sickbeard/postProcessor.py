@@ -60,6 +60,8 @@ class PostProcessor(object):
     FOLDER_NAME = 2
     FILE_NAME = 3
 
+    HANDLED_SUFFIX = ".HANDLED"
+
     def __init__(self, file_path, nzb_name = None):
         """
         Creates a new post processor with the given file path and optionally an NZB name.
@@ -693,6 +695,18 @@ class PostProcessor(object):
         
         return False
 
+    def isAlreadyProcessed(self):
+        """
+        Checks if a file has been already post-processed
+        """
+        
+        alreadyHandledFile = self.file_path + PostProcessor.HANDLED_SUFFIX
+        if alreadyHandledFile and ek.ek(os.path.isfile, alreadyHandledFile):
+            self._log(u"File " + self.file_path + " has been already handled, skipping", logger.DEBUG)
+            return True
+        
+        return False
+
     def process(self):
         """
         Post-process a given file
@@ -707,6 +721,7 @@ class PostProcessor(object):
             if ignore_file in self.file_path:
                 self._log(u"File " + self.file_path + " is ignored type, skipping")
                 return False
+        
         # reset per-file stuff
         self.in_history = False
 
@@ -716,6 +731,11 @@ class PostProcessor(object):
         # if we don't have it then give up
         if not tvdb_id or season == None or not episodes:
             return False
+
+        # We are handling this file right now, no need to reprocess it later
+        # Create the status file # TODO: Replace with a table.
+        alreadyHandledFile = self.file_path + PostProcessor.HANDLED_SUFFIX
+        open(alreadyHandledFile, 'w').close()
 
         # retrieve/create the corresponding TVEpisode objects
         ep_obj = self._get_ep_obj(tvdb_id, season, episodes)
@@ -756,20 +776,8 @@ class PostProcessor(object):
         # if the file is priority then we're going to replace it even if it exists
         else:
             if self.is_proper:
-                alreadyHandledFile = self.file_path + ".HANDLED"
-                if alreadyHandledFile and ek.ek(os.path.isfile, alreadyHandledFile):
-                    self._log(u"This download is marked as a proper but it has been marked as already handled, so we'll skip it", logger.DEBUG)
-                    return False
-                
-                open(alreadyHandledFile, 'w').close()
                 self._log(u"This download is marked as a proper download and it hasn't been handled yet, so I'm going to replace an existing file if I find one", logger.DEBUG)
             else:
-                alreadyHandledFile = self.file_path + ".HANDLED"
-                if alreadyHandledFile and ek.ek(os.path.isfile, alreadyHandledFile):
-                    self._log(u"This download is marked a priority download but it has been marked as already handled, so we'll skip it", logger.DEBUG)
-                    return False
-                
-                open(alreadyHandledFile, 'w').close()
                 self._log(u"This download is marked a priority download and it hasn't been handled yet, so I'm going to replace an existing file if I find one", logger.DEBUG)
             
         

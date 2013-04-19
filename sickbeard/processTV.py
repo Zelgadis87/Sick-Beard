@@ -105,6 +105,9 @@ def processDir (dirName, nzbName=None, recurse=False):
 
         try:
             processor = postProcessor.PostProcessor(cur_video_file_path, nzbName)
+            if processor.isAlreadyProcessed():
+                continue
+                
             process_result = processor.process()
             process_fail_message = ""
         except exceptions.PostProcessingFailed, e:
