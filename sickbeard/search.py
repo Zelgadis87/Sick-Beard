@@ -160,6 +160,7 @@ def snatchEpisode(result, endStatus=SNATCHED):
             curEpObj.saveToDB()
 
         if curEpObj.status not in Quality.DOWNLOADED:
+            logger.log(u"Snatched " + curEpObj.prettyName())
             notifiers.notify_snatch(curEpObj.prettyName())
 
     return True
@@ -229,7 +230,7 @@ def pickBestResult(results, quality_list=None):
     # find the best result for the current episode
     bestResult = None
     for cur_result in results:
-        logger.log("Quality of "+cur_result.name+" is "+Quality.qualityStrings[cur_result.quality])
+        logger.log("Quality of "+cur_result.name+" is "+Quality.qualityStrings[cur_result.quality], logger.DEBUG)
         
         if quality_list and cur_result.quality not in quality_list:
             logger.log(cur_result.name+" is a quality we know we don't want, rejecting it", logger.DEBUG)

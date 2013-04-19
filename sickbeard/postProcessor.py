@@ -59,7 +59,7 @@ class PostProcessor(object):
     NZB_NAME = 1
     FOLDER_NAME = 2
     FILE_NAME = 3
-
+    
     HANDLED_SUFFIX = ".HANDLED"
 
     def __init__(self, file_path, nzb_name = None):
@@ -353,7 +353,7 @@ class PostProcessor(object):
         if none were found.
         """
 
-        logger.log(u"Analyzing name "+repr(name))
+        logger.log(u"Analyzing name "+repr(name), logger.DEBUG)
     
         to_return = (None, None, [])
     
@@ -694,7 +694,7 @@ class PostProcessor(object):
             return True 
         
         return False
-
+        
     def isAlreadyProcessed(self):
         """
         Checks if a file has been already post-processed
@@ -712,14 +712,14 @@ class PostProcessor(object):
         Post-process a given file
         """
 
-        self._log(u"Processing " + self.file_path + " (" + str(self.nzb_name) + ")")
+        self._log(u"Processing " + self.file_path + " (" + str(self.nzb_name) + ")", logger.DEBUG)
 
         if os.path.isdir(self.file_path):
             self._log(u"File " + self.file_path + " seems to be a directory")
             return False
         for ignore_file in self.IGNORED_FILESTRINGS:
             if ignore_file in self.file_path:
-                self._log(u"File " + self.file_path + " is ignored type, skipping")
+                self._log(u"File " + self.file_path + " is ignored type, skipping", logger.DEBUG)
                 return False
         
         # reset per-file stuff
@@ -731,7 +731,7 @@ class PostProcessor(object):
         # if we don't have it then give up
         if not tvdb_id or season == None or not episodes:
             return False
-
+        
         # We are handling this file right now, no need to reprocess it later
         # Create the status file # TODO: Replace with a table.
         alreadyHandledFile = self.file_path + PostProcessor.HANDLED_SUFFIX
