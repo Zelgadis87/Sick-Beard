@@ -793,7 +793,7 @@ def initialize(consoleLogging=True):
         # migrate the config if it needs it
         migrator = ConfigMigrator(CFG)
         migrator.migrate_config()
-
+        
         currentSearchScheduler = scheduler.Scheduler(searchCurrent.CurrentSearcher(),
                                                      cycleTime=datetime.timedelta(minutes=SEARCH_FREQUENCY),
                                                      threadName="SEARCH",

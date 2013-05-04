@@ -163,9 +163,9 @@ def main():
     threading.currentThread().name = "MAIN"
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "qfdp::", ['quiet', 'forceupdate', 'port=', 'daemon', 'noresize', 'pidfile=', 'nolaunch', 'config=', 'datadir='])  # @UnusedVariable
+        opts, args = getopt.getopt(sys.argv[1:], "qfdp::", ['quiet', 'forceupdate', 'port=', 'daemon', 'noresize', 'pidfile=', 'nolaunch', 'config=', 'datadir=', 'locale='])  # @UnusedVariable
     except getopt.GetoptError:
-        print "Available Options: --quiet, --forceupdate, --port, --daemon, --noresize, --pidfile, --nolaunch, --config, --datadir"
+        print "Available Options: --quiet, --forceupdate, --port, --daemon, --noresize, --pidfile, --nolaunch, --config, --datadir, --locale"
         sys.exit()
 
     forceUpdate = False
@@ -210,6 +210,10 @@ def main():
         # Specify folder to use as the data dir
         if o in ('--datadir',):
             sickbeard.DATA_DIR = os.path.abspath(a)
+            
+        if o in ('--locale',):
+            # set the italian locale for the time settings.
+            locale.setlocale(locale.LC_TIME, str(a))
 
         # Write a pidfile if requested
         if o in ('--pidfile',):
