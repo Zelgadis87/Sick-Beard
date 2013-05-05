@@ -29,22 +29,30 @@ class ShowUpdater():
 
     def __init__(self):
         self.updateInterval = datetime.timedelta(hours=1)
+        self.lastRun = None
 
     def run(self, force=False):
 
-        # update at 3 AM
-        updateTime = datetime.time(hour=3)
-
-        logger.log(u"Checking update interval", logger.DEBUG)
-
-        hourDiff = datetime.datetime.today().time().hour - updateTime.hour
-
-        # if it's less than an interval after the update time then do an update (or if we're forcing it)
-        if hourDiff >= 0 and hourDiff < self.updateInterval.seconds/3600 or force:
-            logger.log(u"Doing full update on all shows")
+        doRun = False
+        
+        # If the update is forced or is the first run, do the full update
+        if self.lastRun == None or force:
+            doRun = True
+            logger.log(u"Full update on all shows was forced or it is the first run")
         else:
+            # Otherwise only do that once per day at the same hour of the last update.
+            timedelta = datetime.datetime.today() - self.lastRun
+            
+            # if it's less than an interval after the update time then do an update (or if we're forcing it)
+            if timedelta.total_seconds() - 24 * 60 * 60 >= 0:
+                logger.log(u"Doing full update on all shows. Last run was: " + str(self.lastRun))
+                doRun = True
+            
+        if doRun == False:
             return
-
+            
+        self.lastRun = datetime.datetime.today()
+            
         piList = []
 
         for curShow in sickbeard.showList:
