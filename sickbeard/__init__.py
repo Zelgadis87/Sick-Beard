@@ -36,6 +36,7 @@ from sickbeard.config import CheckSection, check_setting_int, check_setting_str,
 
 from sickbeard import searchCurrent, searchBacklog, showUpdater, versionChecker, properFinder, autoPostProcesser
 from sickbeard import helpers, db, exceptions, show_queue, search_queue, scheduler
+from sickbeard import subtitle_queue
 from sickbeard import logger
 from sickbeard import naming
 
@@ -77,6 +78,7 @@ showQueueScheduler = None
 searchQueueScheduler = None
 properFinderScheduler = None
 autoPostProcesserScheduler = None
+subtitleQueueScheduler = None
 
 showList = None
 loadingShowList = None
@@ -123,6 +125,7 @@ METADATA_PS3 = None
 METADATA_WDTV = None
 METADATA_TIVO = None
 METADATA_SYNOLOGY = None
+SUBTITLE_LANGUAGES = None
 
 QUALITY_DEFAULT = None
 STATUS_DEFAULT = None
@@ -395,6 +398,7 @@ def initialize(consoleLogging=True):
                 USE_PUSHOVER, PUSHOVER_USERKEY, PUSHOVER_NOTIFY_ONDOWNLOAD, PUSHOVER_NOTIFY_ONSNATCH, \
                 USE_LIBNOTIFY, LIBNOTIFY_NOTIFY_ONSNATCH, LIBNOTIFY_NOTIFY_ONDOWNLOAD, USE_NMJ, NMJ_HOST, NMJ_DATABASE, NMJ_MOUNT, USE_NMJv2, NMJv2_HOST, NMJv2_DATABASE, NMJv2_DBLOC, USE_SYNOINDEX, \
                 USE_BANNER, USE_LISTVIEW, METADATA_XBMC, METADATA_MEDIABROWSER, METADATA_PS3, METADATA_SYNOLOGY, metadata_provider_dict, \
+                SUBTITLE_LANGUAGES, subtitleQueueScheduler, \
                 NEWZBIN, NEWZBIN_USERNAME, NEWZBIN_PASSWORD, GIT_PATH, MOVE_ASSOCIATED_FILES, \
                 COMING_EPS_LAYOUT, COMING_EPS_SORT, COMING_EPS_DISPLAY_PAUSED, METADATA_WDTV, METADATA_TIVO, IGNORE_WORDS, CREATE_MISSING_SHOW_DIRS, \
                 ADD_SHOWS_WO_DIR
@@ -555,6 +559,7 @@ def initialize(consoleLogging=True):
         USE_BANNER = bool(check_setting_int(CFG, 'General', 'use_banner', 0))
         USE_LISTVIEW = bool(check_setting_int(CFG, 'General', 'use_listview', 0))
         METADATA_TYPE = check_setting_str(CFG, 'General', 'metadata_type', '')
+        SUBTITLE_LANGUAGES = check_setting_str(CFG, 'General', 'subtitle_languages', '')
 
         metadata_provider_dict = metadata.get_metadata_generator_dict()
 
@@ -579,24 +584,26 @@ def initialize(consoleLogging=True):
                 ART_FANART = bool(check_setting_int(CFG, 'General', 'art_fanart', 1))
                 ART_THUMBNAILS = bool(check_setting_int(CFG, 'General', 'art_thumbnails', 1))
                 ART_SEASON_THUMBNAILS = bool(check_setting_int(CFG, 'General', 'art_season_thumbnails', 1))
+                SUBTITLES = bool(check_setting_int(CFG, 'General', 'subtitles', 1))
 
                 new_metadata_class = old_metadata_class(METADATA_SHOW,
                                                         METADATA_EPISODE,
                                                         ART_POSTER,
                                                         ART_FANART,
                                                         ART_THUMBNAILS,
-                                                        ART_SEASON_THUMBNAILS)
+                                                        ART_SEASON_THUMBNAILS,
+                                                        SUBTITLES)
 
                 metadata_provider_dict[new_metadata_class.name] = new_metadata_class
 
         # this is the normal codepath for metadata config
         else:
-            METADATA_XBMC = check_setting_str(CFG, 'General', 'metadata_xbmc', '0|0|0|0|0|0')
-            METADATA_MEDIABROWSER = check_setting_str(CFG, 'General', 'metadata_mediabrowser', '0|0|0|0|0|0')
-            METADATA_PS3 = check_setting_str(CFG, 'General', 'metadata_ps3', '0|0|0|0|0|0')
-            METADATA_WDTV = check_setting_str(CFG, 'General', 'metadata_wdtv', '0|0|0|0|0|0')
-            METADATA_TIVO = check_setting_str(CFG, 'General', 'metadata_tivo', '0|0|0|0|0|0')
-            METADATA_SYNOLOGY = check_setting_str(CFG, 'General', 'metadata_synology', '0|0|0|0|0|0')
+            METADATA_XBMC = check_setting_str(CFG, 'General', 'metadata_xbmc', '0|0|0|0|0|0|0')
+            METADATA_MEDIABROWSER = check_setting_str(CFG, 'General', 'metadata_mediabrowser', '0|0|0|0|0|0|0')
+            METADATA_PS3 = check_setting_str(CFG, 'General', 'metadata_ps3', '0|0|0|0|0|0|0')
+            METADATA_WDTV = check_setting_str(CFG, 'General', 'metadata_wdtv', '0|0|0|0|0|0|0')
+            METADATA_TIVO = check_setting_str(CFG, 'General', 'metadata_tivo', '0|0|0|0|0|0|0')
+            METADATA_SYNOLOGY = check_setting_str(CFG, 'General', 'metadata_synology', '0|0|0|0|0|0|0')
 
             for cur_metadata_tuple in [(METADATA_XBMC, metadata.xbmc),
                                        (METADATA_MEDIABROWSER, metadata.mediabrowser),
@@ -849,6 +856,11 @@ def initialize(consoleLogging=True):
                                                                       runImmediately=True)
         backlogSearchScheduler.action.cycleTime = BACKLOG_SEARCH_FREQUENCY
 
+        subtitleQueueScheduler = scheduler.Scheduler(subtitle_queue.SubtitleQueue(),
+                                               cycleTime=datetime.timedelta(seconds=3),
+                                               threadName="SUBTITLEQUEUE",
+                                               silent=True)
+
         showList = []
         loadingShowList = {}
 
@@ -861,6 +873,7 @@ def start():
     global __INITIALIZED__, currentSearchScheduler, backlogSearchScheduler, \
             showUpdateScheduler, versionCheckScheduler, showQueueScheduler, \
             properFinderScheduler, autoPostProcesserScheduler, searchQueueScheduler, \
+            subtitleQueueScheduler, \
             started
 
     with INIT_LOCK:
@@ -891,6 +904,9 @@ def start():
             # start the proper finder
             autoPostProcesserScheduler.thread.start()
             
+            #start subtitle queue
+            subtitleQueueScheduler.thread.start()
+
             started = True
 
 
@@ -898,6 +914,7 @@ def halt():
 
     global __INITIALIZED__, currentSearchScheduler, backlogSearchScheduler, showUpdateScheduler, \
             showQueueScheduler, properFinderScheduler, autoPostProcesserScheduler, searchQueueScheduler, \
+            subtitleQueueScheduler, \
             started
 
     with INIT_LOCK:
@@ -964,6 +981,13 @@ def halt():
             except:
                 pass
 
+            subtitleQueueScheduler.abort = True
+            logger.log(u"Waiting for the SUBTITLEQUEUE thread to exit")
+            try:
+                subtitleQueueScheduler.thread.abort()
+            except:
+                pass
+            
             __INITIALIZED__ = False
 
 
@@ -1094,6 +1118,7 @@ def save_config():
 
     new_config['General']['use_banner'] = int(USE_BANNER)
     new_config['General']['use_listview'] = int(USE_LISTVIEW)
+    new_config['General']['subtitle_languages'] = SUBTITLE_LANGUAGES
     new_config['General']['metadata_xbmc'] = metadata_provider_dict['XBMC'].get_config()
     new_config['General']['metadata_mediabrowser'] = metadata_provider_dict['MediaBrowser'].get_config()
     new_config['General']['metadata_ps3'] = metadata_provider_dict['Sony PS3'].get_config()

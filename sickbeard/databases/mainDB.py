@@ -25,7 +25,7 @@ from sickbeard.providers.generic import GenericProvider
 from sickbeard import encodingKludge as ek
 from sickbeard.name_parser.parser import NameParser, InvalidNameException 
 
-MAX_DB_VERSION = 12
+MAX_DB_VERSION = 13
 
 
 class MainSanityCheck(db.DBSanityCheck):
@@ -672,8 +672,21 @@ class Add1080pAndRawHDQualities(AutoDownload):
             ql.append(["UPDATE history SET quality = ? WHERE showid = ? AND date = ?", [self._update_quality(cur_entry["quality"]), cur_entry["showid"], cur_entry["date"]]])
         self.connection.mass_action(ql)
 
+class AddSubtitleColumns(Add1080pAndRawHDQualities):
+
+    def test(self):
+        return self.checkDBVersion() >= 13
+    
+    def execute(self):
+        backupDatabase(13)
+
+        if not self.hasColumn("tv_episodes", "hassrt"):
+            self.addColumn("tv_episodes", "hassrt")
+            logger.log(u"Adding subtitle column to episodes")
+
         self.incDBVersion()
 
         # cleanup and reduce db if any previous data was removed
         logger.log(u"Performing a vacuum on the database.", logger.DEBUG)
         self.connection.action("VACUUM")
+
