@@ -2787,6 +2787,7 @@ class Home:
 
         return json.dumps({'result': 'failure'})
 
+
 class UI:
 
     @cherrypy.expose
@@ -2802,7 +2803,7 @@ class UI:
         messages = {}
         cur_notification_num = 1
         for cur_notification in ui.notifications.get_notifications():
-            messages['notification-'+str(cur_notification_num)] = {'title': cur_notification.title,
+            messages['notification-' + str(cur_notification_num)] = {'title': cur_notification.title,
                                                                    'message': cur_notification.message,
                                                                    'type': cur_notification.type}
             cur_notification_num += 1
@@ -2811,6 +2812,12 @@ class UI:
 
 
 class WebInterface:
+
+    @cherrypy.expose
+    def robots_txt(self):
+        """ Keep web crawlers out """
+        cherrypy.response.headers['Content-Type'] = 'text/plain'
+        return 'User-agent: *\nDisallow: /\n'
 
     @cherrypy.expose
     def index(self):
