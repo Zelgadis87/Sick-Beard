@@ -810,15 +810,13 @@ class TVShow(object):
             if not ek.ek(os.path.isfile, curLoc) or not os.path.normpath(curLoc).startswith(os.path.normpath(self.location)):
 
                 with curEp.lock:
-                    # if it used to have a file associated with it and it doesn't anymore then set it to IGNORED
+                    # if it used to have a file associated with it and it doesn't anymore then set it to ARCHIVED
                     if curEp.location and curEp.status in Quality.DOWNLOADED:
-                        logger.log(str(self.tvdbid) + ": Location for " + str(season) + "x" + str(episode) + " doesn't exist, removing it and changing our status to IGNORED", logger.DEBUG)
-                        curEp.status = IGNORED
-                    curEp.location = ''
+                        logger.log(str(self.tvdbid) + ": Location for " + str(season) + "x" + str(episode) + " doesn't exist, removing it and changing our status to ARCHIVED", logger.DEBUG)
+                        curEp.status = ARCHIVED
                     curEp.hasnfo = False
                     curEp.hastbn = False
                     curEp.hassrt = False
-                    curEp.release_name = ''
                     curEp.saveToDB()
 
     def saveToDB(self):
