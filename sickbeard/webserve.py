@@ -633,6 +633,7 @@ class ConfigGeneral:
     @cherrypy.expose
     def saveRootDirs(self, rootDirString=None):
         sickbeard.ROOT_DIRS = rootDirString
+        sickbeard.save_config()
 
     @cherrypy.expose
     def saveAddShowDefaults(self, defaultFlattenFolders, defaultStatus, anyQualities, bestQualities):
@@ -788,8 +789,9 @@ class ConfigSearch:
         # handle some special cases
         sickbeard.USE_TORRENTS = 1 if postData.get('use_torrents') == "on" else 0
         sickbeard.USE_NZBS = 1 if postData.get('use_nzbs') == "on" else 0
-        sickbeard.TORRENT_PAUSE = 1 if postData.get('torrent_pause') == "on" else 0
+        sickbeard.TORRENT_PAUSED = 1 if postData.get('torrent_paused') == "on" else 0
         sickbeard.DOWLOAD_PROPERS = 1 if postData.get('download_propers') == "on" else 0
+        sickbeard.PREFER_EPISODE_RELEASES = 1 if postData.get('prefer_episode_releases') == "on" else 0
         sickbeard.USENET_RETENTION = int(postData.get('usenet_retention', 200))
 
         # this regex will match http or https urls or just a domain/address
@@ -1015,12 +1017,13 @@ class ConfigProviders:
                       torrentleech_key=None,
                       btn_api_key=None,
                       newzbin_username=None, newzbin_password=None,
-                      thepiratebay_trusted=None, thepiratebay_proxy=None, thepiratebay_proxy_url=None,
+                      thepiratebay_trusted = None, thepiratebay_proxy = None, thepiratebay_proxy_url = None,thepiratebay_url_override = None, thepiratebay_url_override_enable = None,
                       dtt_norar = None, dtt_single = None, 
                       torrentleech_username = None, torrentleech_password = None,
                       torrentday_username = None, torrentday_password = None, torrentday_rsshash = None, torrentday_uid = None,
                       sceneaccess_username = None, sceneaccess_password = None, sceneaccess_rsshash = None,
                       iptorrents_username = None, iptorrents_password = None,iptorrents_uid = None, iptorrents_rsshash = None,
+                      bithdtv_username = None, bithdtv_password = None,
                       torrentz_verified = None,
                       provider_order=None):
 
@@ -1104,6 +1107,8 @@ class ConfigProviders:
                 sickbeard.SCENEACCESS = curEnabled
             elif curProvider == 'iptorrents':
                 sickbeard.IPTORRENTS = curEnabled
+            elif curProvider == 'bithdtv':
+                sickbeard.BITHDTV = curEnabled
             elif curProvider == 'publichd':
                 sickbeard.PUBLICHD = curEnabled
             elif curProvider == 'btn':
@@ -1130,8 +1135,18 @@ class ConfigProviders:
             thepiratebay_proxy = 0
             sickbeard.THEPIRATEBAY_PROXY_URL = ""
             
-        sickbeard.THEPIRATEBAY_PROXY = thepiratebay_proxy    
+        sickbeard.THEPIRATEBAY_PROXY = thepiratebay_proxy
         
+        if thepiratebay_url_override_enable == "on":
+            thepiratebay_url_override_enable = 1
+            thepiratebay_url_override = thepiratebay_url_override.strip()
+            if thepiratebay_url_override:
+                thepiratebay_url_override = thepiratebay_url_override if thepiratebay_url_override.endswith('/') else thepiratebay_url_override + '/'
+            sickbeard.THEPIRATEBAY_URL_OVERRIDE = thepiratebay_url_override
+        else:
+            thepiratebay_url_override_enable = 0
+            sickbeard.THEPIRATEBAY_URL_OVERRIDE = ""
+            
         if dtt_norar == "on":
             dtt_norar = 1
         else:
@@ -1162,6 +1177,9 @@ class ConfigProviders:
         sickbeard.IPTORRENTS_PASSWORD = iptorrents_password.strip()
         sickbeard.IPTORRENTS_UID = iptorrents_uid.strip()
         sickbeard.IPTORRENTS_RSSHASH = iptorrents_rsshash.strip()
+        
+        sickbeard.BITHDTV_USERNAME = bithdtv_username.strip()
+        sickbeard.BITHDTV_PASSWORD = bithdtv_password.strip()
         
         if torrentz_verified == "on":
             torrentz_verified = 1
