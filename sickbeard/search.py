@@ -23,7 +23,7 @@ import traceback
 
 import sickbeard
 
-from common import SNATCHED, Quality, SEASON_RESULT, MULTI_EP_RESULT
+from common import SNATCHED, WANTED, Quality, SEASON_RESULT, MULTI_EP_RESULT
 
 from sickbeard import logger, db, show_name_helpers, exceptions, helpers
 from sickbeard import sab
@@ -196,7 +196,7 @@ def searchForNeededEpisodes():
         # pick a single result for each episode, respecting existing results
         for curEp in curFoundResults:
         
-            if not curEp.status == common.WANTED:
+            if not curEp.status == WANTED:
                 logger.log(u"Episode " + curEp.prettyName() + " is not in the download queue. Ignoring all RSS items for it", logger.DEBUG)
 
             if curEp.show.paused:
@@ -210,6 +210,11 @@ def searchForNeededEpisodes():
                     bestResult = curResult
 
             bestResult = pickBestResult(curFoundResults[curEp])
+
+            # if all results were rejected move on to the next episode
+            if not bestResult:
+                logger.log(u"All found results for "+curEp.prettyName()+" were rejected.", logger.DEBUG)
+                continue
 
             # if it's already in the list (from another provider) and the newly found quality is no better then skip it
             if curEp in foundResults and bestResult.quality <= foundResults[curEp].quality:
