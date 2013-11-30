@@ -26,6 +26,7 @@ from sickbeard import exceptions
 from sickbeard import ui
 from sickbeard.exceptions import ex
 from sickbeard import encodingKludge as ek
+from sickbeard import db
 
 
 class ShowUpdater():
@@ -56,6 +57,7 @@ class ShowUpdater():
             
         self.lastRun = datetime.datetime.today()
             
+        # clean out cache directory, remove everything > 12 hours old
         if sickbeard.CACHE_DIR:
             cache_dir = sickbeard.TVDB_API_PARMS['cache']
             logger.log(u"Trying to clean cache folder " + cache_dir)
@@ -64,7 +66,6 @@ class ShowUpdater():
             if not ek.ek(os.path.isdir, cache_dir):
                 logger.log(u"Can't clean " + cache_dir + " if it doesn't exist", logger.WARNING)
             else:
-                now = datetime.datetime.now()
                 max_age = datetime.timedelta(hours=12)
                 # Get all our cache files
                 cache_files = ek.ek(os.listdir, cache_dir)
@@ -82,17 +83,27 @@ class ShowUpdater():
                                 logger.log(u"Unable to clean " + cache_dir + ": " + repr(e) + " / " + str(e), logger.WARNING)
                                 break
 
-        piList = []
+        # select 10 'Ended' tv_shows updated more than 90 days ago to include in this update
+        stale_should_update = []
+        stale_update_date = (update_date - datetime.timedelta(days=90)).toordinal()
 
+        myDB = db.DBConnection()
+        # last_update_date <= 90 days, sorted ASC because dates are ordinal
+        sql_result = myDB.select("SELECT tvdb_id FROM tv_shows WHERE status = 'Ended' AND last_update_tvdb <= ? ORDER BY last_update_tvdb ASC LIMIT 10;", [stale_update_date])
+
+        for cur_result in sql_result:
+            stale_should_update.append(cur_result['tvdb_id'])
+
+        # start update process
+        piList = []
         for curShow in sickbeard.showList:
 
             try:
-
-                if curShow.status != "Ended":
+                # if should_update returns True (not 'Ended') or show is selected stale 'Ended' then update, otherwise just refresh
+                if curShow.should_update(update_date=update_date) or curShow.tvdbid in stale_should_update:
                     curQueueItem = sickbeard.showQueueScheduler.action.updateShow(curShow, True) #@UndefinedVariable
                 else:
-                    #TODO: maybe I should still update specials?
-                    logger.log(u"Not updating episodes for show "+curShow.name+" because it's marked as ended.", logger.DEBUG)
+                    logger.log(u"Not updating episodes for show " + curShow.name + " because it's marked as ended and last/next episode is not within the grace period.", logger.DEBUG)
                     curQueueItem = sickbeard.showQueueScheduler.action.refreshShow(curShow, True) #@UndefinedVariable
 
                 piList.append(curQueueItem)
