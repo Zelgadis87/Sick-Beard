@@ -144,7 +144,7 @@ def snatchEpisode(result, endStatus=SNATCHED):
         logger.log(u"Unknown result type, unable to download it", logger.ERROR)
         dlResult = False
 
-    if dlResult == False:
+    if dlResult == False or dlResult[0] == False:
         return False
 
     ui.notifications.message('Episode snatched', result.name)
