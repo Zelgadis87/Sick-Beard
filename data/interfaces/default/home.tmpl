@@ -2,6 +2,7 @@
 #import datetime
 #from sickbeard.common import *
 #from sickbeard import db
+#from sickbeard import history
 
 #set global $title="Home"
 #set global $header="Show List"
@@ -14,7 +15,7 @@
 
 #set $myDB = $db.DBConnection()
 #set $today = str($datetime.date.today().toordinal())
-#set $downloadedEps = $myDB.select("SELECT showid, COUNT(*) FROM tv_episodes WHERE (status IN ("+",".join([str(x) for x in $Quality.DOWNLOADED + [$ARCHIVED]])+") OR (status IN ("+",".join([str(x) for x in $Quality.SNATCHED + $Quality.SNATCHED_PROPER])+") AND location != '')) AND season != 0 and episode != 0 AND airdate <= "+$today+" GROUP BY showid")
+#set $downloadedEps = $myDB.select("SELECT showid, COUNT(*), (SELECT date FROM history h WHERE tv.showid = h.showid AND action IN ("+",".join([str(x) for x in ($Quality.DOWNLOADED + $Quality.SNATCHED + $Quality.SNATCHED_PROPER)])+") ORDER BY date DESC LIMIT 1) FROM tv_episodes tv WHERE (status IN ("+",".join([str(x) for x in $Quality.DOWNLOADED + [$ARCHIVED]])+") OR (status IN ("+",".join([str(x) for x in $Quality.SNATCHED + $Quality.SNATCHED_PROPER])+") AND location != '')) AND season != 0 and episode != 0 AND airdate <= "+$today+" GROUP BY showid")
 #set $allEps = $myDB.select("SELECT showid, COUNT(*) FROM tv_episodes WHERE season != 0 and episode != 0 AND (airdate != 1 OR status IN ("+",".join([str(x) for x in ($Quality.DOWNLOADED + $Quality.SNATCHED + $Quality.SNATCHED_PROPER) + [$ARCHIVED]])+")) AND airdate <= "+$today+" AND status != "+str($IGNORED)+" GROUP BY showid")
 
 <script type="text/javascript" charset="utf-8">
@@ -72,19 +73,20 @@
 \$(document).ready(function(){ 
 
     \$("#showListTable:has(tbody tr)").tablesorter({
-        sortList: [[5,1],[1,0]],
+        sortList: [[6,1],[2,0]],
         textExtraction: {
-            3: function(node) { return \$(node).find("span").text().toLowerCase(); },
-            4: function(node) { return \$(node).find("span").text(); },
-            5: function(node) { return \$(node).find("img").attr("alt"); }
+            4: function(node) { return \$(node).find("span").text().toLowerCase(); },
+            5: function(node) { return \$(node).find("span").text(); },
+            6: function(node) { return \$(node).find("img").attr("alt"); }
         },
         widgets: ['saveSort', 'zebra', 'stickyHeaders'],
         headers: {
             0: { sorter: 'isoDate' },
-            1: { sorter: 'loadingNames' },
-            3: { sorter: 'quality' },
-            4: { sorter: 'eps' },
-            6: { sorter: false }
+			1: { sorter: 'isoDate' },
+            2: { sorter: 'loadingNames' },
+            4: { sorter: 'quality' },
+            5: { sorter: 'eps' },
+            7: { sorter: false }
         }
     });
     
@@ -107,6 +109,7 @@
   <thead>
     <tr>
         <th class="nowrap">Next Ep</th>
+		<th class="nowrap">Last Snatched</th>
         <th>Show</th>
         <th>Network</th>
         <th>Quality</th>
@@ -139,6 +142,7 @@
     <a href="displayShow?show=$curLoadingShow.show.tvdbid">$curLoadingShow.show.name</a>
     #end if
     </td>
+	<td></td>
     <td></td>
     <td></td>
     <td></td>
@@ -152,14 +156,18 @@
 $myShowList.sort(lambda x, y: cmp(x.name, y.name))
 #for $curShow in $myShowList:
 #set $curEp = $curShow.nextEpisode()
+#set $lastSnatched = None
 
 #set $curShowDownloads = [x[1] for x in $downloadedEps if int(x[0]) == $curShow.tvdbid]
+#set $curShowLastSnatched = [x[2] for x in $downloadedEps if int(x[0]) == $curShow.tvdbid]
 #set $curShowAll = [x[1] for x in $allEps if int(x[0]) == $curShow.tvdbid]
+#set $lastSnatched = ""
 #if len($curShowAll) != 0:
   #if len($curShowDownloads) != 0:
     #set $dlStat = str($curShowDownloads[0])+" / "+str($curShowAll[0])
     #set $nom = $curShowDownloads[0]
     #set $den = $curShowAll[0]
+	#set $lastSnatched = "" if $curShowLastSnatched[0] == None else datetime.datetime.strptime(str($curShowLastSnatched[0]), $history.dateFormat)
   #else
     #set $dlStat = "0 / "+str($curShowAll[0])
     #set $nom = 0
@@ -171,9 +179,9 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
   #set $den = 1
 #end if
 
-
   <tr>
     <td align="center" class="nowrap">#if len($curEp) != 0 then $curEp[0].airdate else ""#</td>
+	<td align="center" class="nowrap">$lastSnatched</td>
     <td class="tvShow"><a href="$sbRoot/home/displayShow?show=$curShow.tvdbid">$curShow.name</a></td>
     <td>$curShow.network</td>
 #if $curShow.quality in $qualityPresets:
