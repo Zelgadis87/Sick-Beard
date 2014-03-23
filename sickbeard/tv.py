@@ -228,6 +228,7 @@ class TVShow(object):
             logger.log(str(self.tvdbid) + u": Show dir doesn't exist, skipping NFO generation")
             return False
 
+        logger.log(str(self.tvdbid) + u": Writing NFOs for show")
         for cur_provider in sickbeard.metadata_provider_dict.values():
             result = cur_provider.create_show_metadata(self) or result
 
@@ -437,16 +438,23 @@ class TVShow(object):
             return
 
     def getImages(self, fanart=None, poster=None):
-
-        poster_result = fanart_result = season_thumb_result = False
+        fanart_result = poster_result = banner_result = False
+        season_posters_result = season_banners_result = season_all_poster_result = season_all_banner_result = False
 
         for cur_provider in sickbeard.metadata_provider_dict.values():
-            logger.log(u"Running season folders for " + cur_provider.name, logger.DEBUG)
-            poster_result = cur_provider.create_poster(self) or poster_result
-            fanart_result = cur_provider.create_fanart(self) or fanart_result
-            season_thumb_result = cur_provider.create_season_thumbs(self) or season_thumb_result
+            # FIXME: Needs to not show this message if the option is not enabled?
+            logger.log(u"Running metadata routines for " + cur_provider.name, logger.DEBUG)
 
-        return poster_result or fanart_result or season_thumb_result
+            fanart_result = cur_provider.create_fanart(self) or fanart_result
+            poster_result = cur_provider.create_poster(self) or poster_result
+            banner_result = cur_provider.create_banner(self) or banner_result
+
+            season_posters_result = cur_provider.create_season_posters(self) or season_posters_result
+            season_banners_result = cur_provider.create_season_banners(self) or season_banners_result
+            season_all_poster_result = cur_provider.create_season_all_poster(self) or season_all_poster_result
+            season_all_banner_result = cur_provider.create_season_all_banner(self) or season_all_banner_result
+
+        return fanart_result or poster_result or banner_result or season_posters_result or season_banners_result or season_all_poster_result or season_all_banner_result
 
     def loadLatestFromTVRage(self):
 
@@ -696,56 +704,6 @@ class TVShow(object):
 
         self.saveToDB()
 
-    def loadNFO(self):
-
-        if not os.path.isdir(self._location):
-            logger.log(str(self.tvdbid) + u": Show dir doesn't exist, can't load NFO")
-            raise exceptions.NoNFOException("The show dir doesn't exist, no NFO could be loaded")
-
-        logger.log(str(self.tvdbid) + u": Loading show info from NFO")
-
-        xmlFile = ek.ek(os.path.join, self._location, "tvshow.nfo")
-
-        try:
-            xmlFileObj = open(xmlFile, 'r')
-            showXML = etree.ElementTree(file=xmlFileObj)
-
-            if showXML.findtext('title') == None or (showXML.findtext('tvdbid') == None and showXML.findtext('id') == None):
-                raise exceptions.NoNFOException("Invalid info in tvshow.nfo (missing name or id):" \
-                    + str(showXML.findtext('title')) + " " \
-                    + str(showXML.findtext('tvdbid')) + " " \
-                    + str(showXML.findtext('id')))
-
-            self.name = showXML.findtext('title')
-            if showXML.findtext('tvdbid') != None:
-                self.tvdbid = int(showXML.findtext('tvdbid'))
-            elif showXML.findtext('id'):
-                self.tvdbid = int(showXML.findtext('id'))
-            else:
-                raise exceptions.NoNFOException("Empty <id> or <tvdbid> field in NFO")
-
-        except (exceptions.NoNFOException, SyntaxError, ValueError), e:
-            logger.log(u"There was an error parsing your existing tvshow.nfo file: " + ex(e), logger.ERROR)
-            logger.log(u"Attempting to rename it to tvshow.nfo.old", logger.DEBUG)
-
-            try:
-                xmlFileObj.close()
-                ek.ek(os.rename, xmlFile, xmlFile + ".old")
-            except Exception, e:
-                logger.log(u"Failed to rename your tvshow.nfo file - you need to delete it or fix it: " + ex(e), logger.ERROR)
-            raise exceptions.NoNFOException("Invalid info in tvshow.nfo")
-
-        if showXML.findtext('studio') != None:
-            self.network = showXML.findtext('studio')
-        if self.network == None and showXML.findtext('network') != None:
-            self.network = ""
-        if showXML.findtext('genre') != None:
-            self.genre = showXML.findtext('genre')
-        else:
-            self.genre = ""
-
-        # TODO: need to validate the input, I'm assuming it's good until then
-
     def getQueuedEpisodes(self, limit=1):
         """ 
         Fetches the first 'limit' episodes in chronological time of this TVShow 
@@ -965,7 +923,7 @@ class TVShow(object):
             return Overview.GOOD
         elif epStatus in Quality.DOWNLOADED + Quality.SNATCHED + Quality.SNATCHED_PROPER:
 
-            anyQualities, bestQualities = Quality.splitQuality(self.quality)  #@UnusedVariable
+            anyQualities, bestQualities = Quality.splitQuality(self.quality)  # @UnusedVariable
             if bestQualities:
                 maxBestQuality = max(bestQualities)
             else:
@@ -1285,11 +1243,11 @@ class TVEpisode(object):
             logger.log(u"6 Status changes from " + str(self.status) + " to " + str(UNKNOWN), logger.DEBUG)
             self.status = UNKNOWN
 
-        # hasnfo, hastbn, hasstr, status?
+        # hasnfo, hastbn, status?
 
     def loadFromNFO(self, location):
 
-        if not os.path.isdir(self.show._location):
+        if not ek.ek(os.path.isdir, self.show._location):
             logger.log(str(self.show.tvdbid) + u": The show dir is missing, not bothering to try loading the episode NFO")
             return
 
@@ -1402,7 +1360,7 @@ class TVEpisode(object):
             result = cur_provider.create_subtitles(self) or result
 
         return result
-    
+
     def deleteEpisode(self):
 
         logger.log(u"Deleting " + self.show.name + " " + str(self.season) + "x" + str(self.episode) + " from the DB", logger.DEBUG)
@@ -1549,7 +1507,7 @@ class TVEpisode(object):
                 return ''
             return parse_result.release_group
 
-        epStatus, epQual = Quality.splitCompositeStatus(self.status)  #@UnusedVariable
+        epStatus, epQual = Quality.splitCompositeStatus(self.status)  # @UnusedVariable
 
         return {
                    '%SN': self.show.name,
@@ -1708,10 +1666,9 @@ class TVEpisode(object):
             result_name = result_name.replace(cur_name_group, cur_name_group_result)
 
         result_name = self._format_string(result_name, replace_map)
-        
-        logger.log(u"formatting pattern: "+pattern+" -> "+result_name, logger.DEBUG)
-        
-        
+
+        logger.log(u"formatting pattern: " + pattern + " -> " + result_name, logger.DEBUG)
+
         return result_name
 
     def proper_path(self):
@@ -1795,7 +1752,7 @@ class TVEpisode(object):
             logger.log(str(self.tvdbid) + u": File " + self.location + " is already named correctly, skipping", logger.DEBUG)
             return
 
-        related_files = postProcessor.PostProcessor(self.location)._list_associated_files(self.location)
+        related_files = postProcessor.PostProcessor(self.location).list_associated_files(self.location, base_name_only=True)
         logger.log(u"Files associated to " + self.location + ": " + str(related_files), logger.DEBUG)
 
         # move the ep file

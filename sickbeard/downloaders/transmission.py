@@ -57,8 +57,12 @@ def sendTORRENT(torrent):
     ###################################################################################################
     
     host = urlparse(sickbeard.TORRENT_HOST)
-    session = torrent.provider.session
-    
+    session = None
+    if hasattr(torrent.provider, 'session'):
+        session = torrent.provider.session
+    else:
+        session = requests.Session()
+
     if torrent.url.startswith("magnet:"):
         magnet=1
         
@@ -71,7 +75,7 @@ def sendTORRENT(torrent):
             tc = transmissionrpc.Client(host.hostname, host.port, sickbeard.TORRENT_USERNAME, sickbeard.TORRENT_PASSWORD)
             logger.log("[Transmission] Login With Transmission, Successful.", logger.DEBUG)
         except transmissionrpc.TransmissionError, e:
-            logger.log("[Transmission] Login With Transmission, Failed - " + transmissionrpc.TransmissionError.message, logger.ERROR)    
+            logger.log("[Transmission] Login With Transmission, Failed.",logger.ERROR)
             return False,u"[Transmission] Login With Transmission, Failed."
             
         ###################################################################################################

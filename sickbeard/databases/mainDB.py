@@ -88,8 +88,7 @@ def backupDatabase(version):
     logger.log(u"Backing up database before upgrade")
 
     if not helpers.backupVersionedFile(db.dbFilename(), version):
-        logger.log(u"Database backup failed, abort upgrading database")
-        sys.exit("Database backup failed, abort upgrading database")
+        logger.log_error_and_exit(u"Database backup failed, abort upgrading database")
     else:
         logger.log(u"Proceeding with upgrade")
 
@@ -110,12 +109,12 @@ class InitialSchema (db.SchemaUpgrade):
                 "CREATE TABLE db_version (db_version INTEGER);",
                 "CREATE TABLE history (action NUMERIC, date NUMERIC, showid NUMERIC, season NUMERIC, episode NUMERIC, quality NUMERIC, resource TEXT, provider TEXT);",
                 "CREATE TABLE info (last_backlog NUMERIC, last_tvdb NUMERIC);",
-                "CREATE TABLE tv_episodes (episode_id INTEGER PRIMARY KEY, showid NUMERIC, tvdbid NUMERIC, name TEXT, season NUMERIC, episode NUMERIC, description TEXT, airdate NUMERIC, hasnfo NUMERIC, hastbn NUMERIC, status NUMERIC, location TEXT, file_size NUMERIC, release_name TEXT);",
+                "CREATE TABLE tv_episodes (episode_id INTEGER PRIMARY KEY, showid NUMERIC, tvdbid NUMERIC, name TEXT, season NUMERIC, episode NUMERIC, description TEXT, airdate NUMERIC, hasnfo NUMERIC, hastbn NUMERIC, hassrt NUMERIC, status NUMERIC, location TEXT, file_size NUMERIC, release_name TEXT);",
                 "CREATE TABLE tv_shows (show_id INTEGER PRIMARY KEY, location TEXT, show_name TEXT, tvdb_id NUMERIC, network TEXT, genre TEXT, runtime NUMERIC, quality NUMERIC, airs TEXT, status TEXT, flatten_folders NUMERIC, paused NUMERIC, startyear NUMERIC, tvr_id NUMERIC, tvr_name TEXT, air_by_date NUMERIC, lang TEXT, last_update_tvdb NUMERIC);",
                 "CREATE INDEX idx_tv_episodes_showid_airdate ON tv_episodes (showid,airdate);",
                 "CREATE INDEX idx_showid ON tv_episodes (showid);",
                 "CREATE UNIQUE INDEX idx_tvdb_id ON tv_shows (tvdb_id);",
-                "INSERT INTO db_version (db_version) VALUES (14);"
+                "INSERT INTO db_version (db_version) VALUES (15);"
             ]
 
             for query in queries:
@@ -125,12 +124,16 @@ class InitialSchema (db.SchemaUpgrade):
             cur_db_version = self.checkDBVersion()
 
             if cur_db_version < MIN_DB_VERSION:
-                sys.exit("Your database version (" + str(cur_db_version) + ") is too old to migrate from what this version of Sick Beard supports (" + str(MIN_DB_VERSION) + ").\n" + \
-                                 "Upgrade using a previous version (tag) build 496 to build 501 of Sick Beard first or remove database file to begin fresh.")
+                logger.log_error_and_exit(u"Your database version (" + str(cur_db_version) + ") is too old to migrate from what this version of Sick Beard supports (" + \
+                                          str(MIN_DB_VERSION) + ").\n" + \
+                                          "Upgrade using a previous version (tag) build 496 to build 501 of Sick Beard first or remove database file to begin fresh."
+                                          )
 
             if cur_db_version > MAX_DB_VERSION:
-                sys.exit("Your database version (" + str(cur_db_version) + ") has been incremented past what this version of Sick Beard supports (" + str(MAX_DB_VERSION) + ").\n" + \
-                                  "If you have used other forks of Sick Beard, your database may be unusable due to their modifications.")
+                logger.log_error_and_exit(u"Your database version (" + str(cur_db_version) + ") has been incremented past what this version of Sick Beard supports (" + \
+                                          str(MAX_DB_VERSION) + ").\n" + \
+                                          "If you have used other forks of Sick Beard, your database may be unusable due to their modifications."
+                                          )
 
 
 # included in build 496 (2012-06-28)
@@ -382,6 +385,12 @@ class Add1080pAndRawHDQualities(AutoDownload):
             ql.append(["UPDATE history SET quality = ? WHERE showid = ? AND date = ?", [self._update_quality(cur_entry["quality"]), cur_entry["showid"], cur_entry["date"]]])
         self.connection.mass_action(ql)
 
+        self.incDBVersion()
+
+        # cleanup and reduce db if any previous data was removed
+        logger.log(u"Performing a vacuum on the database.", logger.DEBUG)
+        self.connection.action("VACUUM")
+
 class AddSubtitleColumns(Add1080pAndRawHDQualities):
 
     def test(self):
@@ -396,12 +405,7 @@ class AddSubtitleColumns(Add1080pAndRawHDQualities):
 
         self.incDBVersion()
 
-        # cleanup and reduce db if any previous data was removed
-        logger.log(u"Performing a vacuum on the database.", logger.DEBUG)
-        self.connection.action("VACUUM")
-
-
-# included in build 502 (TBD)
+# included in build 502 (2013-11-24)
 class AddShowidTvdbidIndex(AddSubtitleColumns):
     """ Adding index on tvdb_id (tv_shows) and showid (tv_episodes) to speed up searches/queries """
 
@@ -415,13 +419,15 @@ class AddShowidTvdbidIndex(AddSubtitleColumns):
         MainSanityCheck(self.connection).fix_duplicate_shows()
 
         logger.log(u"Adding index on tvdb_id (tv_shows) and showid (tv_episodes) to speed up searches/queries.")
-        self.connection.action("CREATE INDEX idx_showid ON tv_episodes (showid);")
-        self.connection.action("CREATE UNIQUE INDEX idx_tvdb_id ON tv_shows (tvdb_id);")
+        if not self.hasTable("idx_showid"):
+            self.connection.action("CREATE INDEX idx_showid ON tv_episodes (showid);")
+        if not self.hasTable("idx_tvdb_id"):
+            self.connection.action("CREATE UNIQUE INDEX idx_tvdb_id ON tv_shows (tvdb_id);")
 
         self.incDBVersion()
 
 
-# included in build 502 (TBD)
+# included in build 502 (2013-11-24)
 class AddLastUpdateTVDB(AddShowidTvdbidIndex):
     """ Adding column last_update_tvdb to tv_shows for controlling nightly updates """
 
@@ -436,3 +442,7 @@ class AddLastUpdateTVDB(AddShowidTvdbidIndex):
             self.addColumn("tv_shows", "last_update_tvdb", default=1)
 
         self.incDBVersion()
+
+        # cleanup and reduce db if any previous data was removed
+        logger.log(u"Performing a vacuum on the database.", logger.DEBUG)
+        self.connection.action("VACUUM")
