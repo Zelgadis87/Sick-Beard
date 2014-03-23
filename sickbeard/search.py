@@ -130,7 +130,7 @@ def snatchEpisode(result, endStatus=SNATCHED):
             
         # torrents are always saved to disk
         if sickbeard.TORRENT_METHOD == "blackhole": 
-            dlResult = _downloadResult(result)
+            dlResult = [_downloadResult(result)]
        # torrents are sending to torrent client
         elif sickbeard.TORRENT_METHOD == "utorrent":
             dlResult = utorrent.sendTORRENT(result)
