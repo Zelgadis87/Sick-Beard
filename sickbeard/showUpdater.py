@@ -39,6 +39,9 @@ class ShowUpdater():
 
         doRun = False
         
+        update_datetime = datetime.datetime.today()
+        update_date = update_datetime.date()
+        
         # If the update is forced or is the first run, do the full update
         if self.lastRun == None or force:
             doRun = True
@@ -55,7 +58,7 @@ class ShowUpdater():
         if doRun == False:
             return
             
-        self.lastRun = datetime.datetime.today()
+        self.lastRun = update_datetime
             
         # clean out cache directory, remove everything > 12 hours old
         if sickbeard.CACHE_DIR:
@@ -66,6 +69,7 @@ class ShowUpdater():
             if not ek.ek(os.path.isdir, cache_dir):
                 logger.log(u"Can't clean " + cache_dir + " if it doesn't exist", logger.WARNING)
             else:
+                now = datetime.datetime.now()
                 max_age = datetime.timedelta(hours=12)
                 # Get all our cache files
                 cache_files = ek.ek(os.listdir, cache_dir)
