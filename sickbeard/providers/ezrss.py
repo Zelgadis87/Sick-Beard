@@ -50,6 +50,9 @@ class EZRSSProvider(generic.TorrentProvider):
     def imageName(self):
         return 'ezrss.png'
 
+    def useMagnet(self):
+        return False;
+
     def getQuality(self, item):
 
         filename = helpers.get_xml_text(item.find('{http://xmlns.ezrss.it/0.1/}torrent/{http://xmlns.ezrss.it/0.1/}fileName'))
@@ -143,12 +146,16 @@ class EZRSSProvider(generic.TorrentProvider):
         (title, url) = generic.TorrentProvider._get_title_and_url(self, item)
 
         filename = helpers.get_xml_text(item.find('{http://xmlns.ezrss.it/0.1/}torrent/{http://xmlns.ezrss.it/0.1/}fileName'))
+        magnet = helpers.get_xml_text(item.find('{http://xmlns.ezrss.it/0.1/}torrent/{http://xmlns.ezrss.it/0.1/}magnetURI'))
 
         if filename:
             new_title = self._extract_name_from_filename(filename)
             if new_title:
                 title = new_title
                 logger.log(u"Extracted the name " + title + " from the torrent link", logger.DEBUG)
+
+        if self.useMagnet() and magnet:
+            url = magnet
 
         return (title, url)
 
