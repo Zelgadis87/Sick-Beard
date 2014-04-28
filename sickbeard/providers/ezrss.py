@@ -51,7 +51,7 @@ class EZRSSProvider(generic.TorrentProvider):
         return 'ezrss.png'
 
     def useMagnet(self):
-        return False;
+        return True;
 
     def getQuality(self, item):
 
