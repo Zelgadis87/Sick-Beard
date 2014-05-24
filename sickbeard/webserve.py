@@ -682,12 +682,13 @@ class ConfigGeneral:
     @cherrypy.expose
     def saveGeneral(self, log_dir=None, web_port=None, web_log=None, web_ipv6=None,
                     launch_browser=None, web_username=None, use_api=None, api_key=None,
-                    web_password=None, version_notify=None, enable_https=None, https_cert=None, https_key=None):
+                    web_password=None, version_notify=None, enable_https=None, https_cert=None, https_key=None, hide_tvshow_status=None):
 
         results = []
 
         # Misc
         sickbeard.LAUNCH_BROWSER = config.checkbox_to_value(launch_browser)
+        sickbeard.HIDE_TVSHOW_STATUS = config.checkbox_to_value(hide_tvshow_status)
         config.change_VERSION_NOTIFY(config.checkbox_to_value(version_notify))
         # sickbeard.LOG_DIR is set in config.change_LOG_DIR()
 
@@ -1000,7 +1001,7 @@ class ConfigProviders:
                       torrentleech_key=None,
                       btn_api_key=None, hdbits_username=None, hdbits_passkey=None,
                       thepiratebay_trusted = None, thepiratebay_proxy = None, thepiratebay_proxy_url = None,thepiratebay_url_override = None, thepiratebay_url_override_enable = None,
-                      dtt_norar = None, dtt_single = None, 
+                      dtt_norar = None, dtt_single = None,
                       torrentleech_username = None, torrentleech_password = None,
                       torrentday_username = None, torrentday_password = None,
                       sceneaccess_username = None, sceneaccess_password = None, sceneaccess_rsshash = None,
@@ -1024,7 +1025,7 @@ class ConfigProviders:
         # add all the newznab info we got into our list
         if newznab_string:
             for curNewznabProviderStr in newznab_string.split('!!!'):
-    
+
                 if not curNewznabProviderStr:
                     continue
 
@@ -1076,7 +1077,7 @@ class ConfigProviders:
             elif curProvider == 'torrentz':
                 sickbeard.TORRENTZ = curEnabled
             elif curProvider == 'thepiratebay':
-                sickbeard.THEPIRATEBAY = curEnabled 
+                sickbeard.THEPIRATEBAY = curEnabled
             elif curProvider == 'tvtorrents':
                 sickbeard.TVTORRENTS = curEnabled
             elif curProvider == 'dailytvtorrents':
@@ -1120,16 +1121,16 @@ class ConfigProviders:
             thepiratebay_trusted = 0
 
         sickbeard.THEPIRATEBAY_TRUSTED = thepiratebay_trusted
-        
-        if thepiratebay_proxy == "on": 
+
+        if thepiratebay_proxy == "on":
             thepiratebay_proxy = 1
             sickbeard.THEPIRATEBAY_PROXY_URL = thepiratebay_proxy_url.strip()
         else:
             thepiratebay_proxy = 0
             sickbeard.THEPIRATEBAY_PROXY_URL = ""
-            
+
         sickbeard.THEPIRATEBAY_PROXY = thepiratebay_proxy
-        
+
         if thepiratebay_url_override_enable == "on":
             thepiratebay_url_override_enable = 1
             thepiratebay_url_override = thepiratebay_url_override.strip()
@@ -1139,53 +1140,53 @@ class ConfigProviders:
         else:
             thepiratebay_url_override_enable = 0
             sickbeard.THEPIRATEBAY_URL_OVERRIDE = ""
-            
+
         if dtt_norar == "on":
             dtt_norar = 1
         else:
             dtt_norar = 0
 
         sickbeard.DTT_NORAR = dtt_norar
-            
+
         if dtt_single == "on":
             dtt_single = 1
         else:
             dtt_single = 0
 
         sickbeard.DTT_SINGLE = dtt_single
-        
+
         sickbeard.TORRENTLEECH_USERNAME = torrentleech_username
         sickbeard.TORRENTLEECH_PASSWORD = torrentleech_password
-        
+
         sickbeard.TORRENTDAY_USERNAME = torrentday_username.strip()
         sickbeard.TORRENTDAY_PASSWORD = torrentday_password.strip()
-        
+
         sickbeard.SCENEACCESS_USERNAME = sceneaccess_username.strip()
         sickbeard.SCENEACCESS_PASSWORD = sceneaccess_password.strip()
         sickbeard.SCENEACCESS_RSSHASH = sceneaccess_rsshash.strip()
-        
+
         sickbeard.IPTORRENTS_USERNAME = iptorrents_username.strip()
         sickbeard.IPTORRENTS_PASSWORD = iptorrents_password.strip()
         sickbeard.IPTORRENTS_UID = iptorrents_uid.strip()
         sickbeard.IPTORRENTS_RSSHASH = iptorrents_rsshash.strip()
-        
+
         sickbeard.BITHDTV_USERNAME = bithdtv_username.strip()
         sickbeard.BITHDTV_PASSWORD = bithdtv_password.strip()
-        
+
         sickbeard.FUCKLIMITS_USERNAME = fucklimits_username.strip()
         sickbeard.FUCKLIMITS_PASSWORD = fucklimits_password.strip()
-        
+
         sickbeard.TORRENTSHACK_USERNAME = torrentshack_username.strip()
         sickbeard.TORRENTSHACK_PASSWORD = torrentshack_password.strip()
         sickbeard.TORRENTSHACK_UID = torrentshack_uid.strip()
         sickbeard.TORRENTSHACK_AUTH = torrentshack_auth.strip()
         sickbeard.TORRENTSHACK_PASS_KEY = torrentshack_pass_key.strip()
         sickbeard.TORRENTSHACK_AUTH_KEY = torrentshack_auth_key.strip()
-        
+
         sickbeard.SPEED_USERNAME = speed_username.strip()
         sickbeard.SPEED_PASSWORD = speed_password.strip()
         sickbeard.SPEED_RSSHASH = speed_rsshash.strip()
-        
+
         if torrentz_verified == "on":
             torrentz_verified = 1
         else:
@@ -1912,7 +1913,7 @@ class ErrorLogs:
                 finalData.append(x)
                 for y in setAsideLines:
                     finalData.append(y)
-                
+
                 setAsideLines = []
 
             else:
@@ -1980,7 +1981,7 @@ class Home:
     def testTorrent(self, torrent_method=None, host=None, username=None, password=None):
         if not host.endswith("/"):
             host = host + "/"
-        
+
         if torrent_method == 'utorrent':
             connection, accesMsg = utorrent.testAuthentication(host, username, password)
         elif torrent_method == 'transmission':
@@ -1990,8 +1991,8 @@ class Home:
         elif torrent_method == 'deluge':
             connection, accesMsg = deluge.testAuthentication(host, username, password)
 
-        return accesMsg   
-    
+        return accesMsg
+
     @cherrypy.expose
     def testGrowl(self, host=None, password=None):
         cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"

@@ -38,7 +38,7 @@
                                 <span class="component-desc">Should Sick Beard open its home page when started?</span>
                             </label>
                         </div>
-                        
+
                         <div class="field-pair">
                             <input type="checkbox" name="version_notify" id="version_notify" #if $sickbeard.VERSION_NOTIFY then "checked=\"checked\"" else ""#/>
                             <label class="clearfix" for="version_notify">
@@ -48,6 +48,14 @@
                             <label class="nocheck clearfix">
                                 <span class="component-title">&nbsp;</span>
                                 <span class="component-desc">Checking for updates runs on startup and every 12 hours.</span>
+                            </label>
+                        </div>
+
+                        <div class="field-pair">
+                            <input type="checkbox" name="hide_tvshow_status" id="hide_tvshow_status" #if $sickbeard.HIDE_TVSHOW_STATUS then "checked=\"checked\"" else ""#/>
+                            <label class="clearfix" for="hide_tvshow_status">
+                                <span class="component-title">Hide TVShow status</span>
+                                <span class="component-desc">Hides the status of TVShows in the list</span>
                             </label>
                         </div>
 
@@ -72,7 +80,7 @@
                     </div>
 
                     <fieldset class="component-group-list">
-                        
+
                         <div class="field-pair">
                             <input type="checkbox" name="web_ipv6" id="web_ipv6" #if $sickbeard.WEB_IPV6 then "checked=\"checked\"" else ""#/>
                             <label class="clearfix" for="web_ipv6">
@@ -80,7 +88,7 @@
                                 <span class="component-desc">Allow Sick Beard to bind to any available IPv6 address?</span>
                             </label>
                         </div>
-                        
+
                         <div class="field-pair">
                             <input type="checkbox" name="web_log" id="web_log" #if $sickbeard.WEB_LOG then "checked=\"checked\"" else ""#/>
                             <label class="clearfix" for="web_log">
@@ -88,7 +96,7 @@
                                 <span class="component-desc">Have Sick Beard's web server (cherrypy) generate logs?</span>
                             </label>
                         </div>
-                        
+
                         <div class="field-pair">
                             <label class="nocheck clearfix">
                                 <span class="component-title">HTTP Port</span>
@@ -129,7 +137,7 @@
                                 <span class="component-desc">Enable accessing the interface from a HTTPS address.</span>
                             </label>
                         </div>
-                        
+
                         <div id="content_enable_https">
                             <div class="field-pair">
                                 <label class="nocheck clearfix">
@@ -141,7 +149,7 @@
                                     <span class="component-desc">File name or path to HTTPS Certificate.</span>
                                 </label>
                             </div>
-    
+
                             <div class="field-pair">
                                 <label class="nocheck clearfix">
                                     <span class="component-title">HTTPS Key</span>

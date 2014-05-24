@@ -127,6 +127,7 @@ LAUNCH_BROWSER = None
 CACHE_DIR = None
 ACTUAL_CACHE_DIR = None
 ROOT_DIRS = None
+HIDE_TVSHOW_STATUS = False
 
 USE_LISTVIEW = None
 METADATA_XBMC = None
@@ -395,7 +396,7 @@ def initialize(consoleLogging=True):
                 USE_TRAKT, TRAKT_USERNAME, TRAKT_PASSWORD, TRAKT_API, \
                 USE_PLEX, PLEX_NOTIFY_ONSNATCH, PLEX_NOTIFY_ONDOWNLOAD, PLEX_UPDATE_LIBRARY, \
                 PLEX_SERVER_HOST, PLEX_HOST, PLEX_USERNAME, PLEX_PASSWORD, \
-                showUpdateScheduler, __INITIALIZED__, LAUNCH_BROWSER, showList, loadingShowList, \
+                showUpdateScheduler, __INITIALIZED__, LAUNCH_BROWSER, HIDE_TVSHOW_STATUS, showList, loadingShowList, \
                 NEWZNAB_DATA, NZBS, NZBS_UID, NZBS_HASH, EZRSS, HDBITS, HDBITS_USERNAME, HDBITS_PASSKEY, TVTORRENTS, TVTORRENTS_DIGEST, TVTORRENTS_HASH, BTN, BTN_API_KEY, \
                 TORRENT_DIR, USENET_RETENTION, SOCKET_TIMEOUT, \
                 KICKASS, TORRENTZ, TORRENTZ_VERIFIED, \
@@ -463,6 +464,7 @@ def initialize(consoleLogging=True):
         WEB_USERNAME = check_setting_str(CFG, 'General', 'web_username', '')
         WEB_PASSWORD = check_setting_str(CFG, 'General', 'web_password', '')
         LAUNCH_BROWSER = bool(check_setting_int(CFG, 'General', 'launch_browser', 1))
+        HIDE_TVSHOW_STATUS = bool(check_setting_int(CFG, 'General', 'hide_tvshow_status', 0))
 
         ANON_REDIRECT = check_setting_str(CFG, 'General', 'anon_redirect', 'http://dereferer.org/?')
         # attempt to help prevent users from breaking links by using a bad url
@@ -471,7 +473,7 @@ def initialize(consoleLogging=True):
 
         USE_API = bool(check_setting_int(CFG, 'General', 'use_api', 0))
         API_KEY = check_setting_str(CFG, 'General', 'api_key', '')
-        
+
         ENABLE_HTTPS = bool(check_setting_int(CFG, 'General', 'enable_https', 0))
         HTTPS_CERT = check_setting_str(CFG, 'General', 'https_cert', 'server.crt')
         HTTPS_KEY = check_setting_str(CFG, 'General', 'https_key', 'server.key')
@@ -480,21 +482,21 @@ def initialize(consoleLogging=True):
         # fix bad configs due to buggy code
         if ACTUAL_CACHE_DIR == 'None':
             ACTUAL_CACHE_DIR = 'cache'
-        
+
         # unless they specify, put the cache dir inside the data dir
         if not os.path.isabs(ACTUAL_CACHE_DIR):
             CACHE_DIR = os.path.join(DATA_DIR, ACTUAL_CACHE_DIR)
         else:
             CACHE_DIR = ACTUAL_CACHE_DIR
-        
+
         if not helpers.makeDir(CACHE_DIR):
             logger.log(u"!!! Creating local cache dir failed, using system default", logger.ERROR)
             CACHE_DIR = None
-        
+
         ROOT_DIRS = check_setting_str(CFG, 'General', 'root_dirs', '')
         if not re.match(r'\d+\|[^|]+(?:\|[^|]+)*', ROOT_DIRS):
             ROOT_DIRS = ''
-        
+
         proxies = urllib.getproxies()
         proxy_url = None # @UnusedVariable
         if 'http' in proxies:
@@ -550,7 +552,7 @@ def initialize(consoleLogging=True):
         MOVE_ASSOCIATED_FILES = check_setting_int(CFG, 'General', 'move_associated_files', 0)
         CREATE_MISSING_SHOW_DIRS = check_setting_int(CFG, 'General', 'create_missing_show_dirs', 0)
         ADD_SHOWS_WO_DIR = check_setting_int(CFG, 'General', 'add_shows_wo_dir', 0)
-        
+
         EZRSS = bool(check_setting_int(CFG, 'General', 'use_torrent', 0))
         if not EZRSS:
             CheckSection(CFG, 'EZRSS')
@@ -562,51 +564,51 @@ def initialize(consoleLogging=True):
 
         SUBTITLE_LANGUAGES = check_setting_str(CFG, 'General', 'subtitle_languages', '')
 
-        TVTORRENTS = bool(check_setting_int(CFG, 'TVTORRENTS', 'tvtorrents', 0))    
+        TVTORRENTS = bool(check_setting_int(CFG, 'TVTORRENTS', 'tvtorrents', 0))
         TVTORRENTS_DIGEST = check_setting_str(CFG, 'TVTORRENTS', 'tvtorrents_digest', '')
         TVTORRENTS_HASH = check_setting_str(CFG, 'TVTORRENTS', 'tvtorrents_hash', '')
 
-        THEPIRATEBAY = bool(check_setting_int(CFG, 'THEPIRATEBAY', 'thepiratebay', 0)) 
-        THEPIRATEBAY_TRUSTED = bool(check_setting_int(CFG, 'THEPIRATEBAY', 'thepiratebay_trusted', 0))         
+        THEPIRATEBAY = bool(check_setting_int(CFG, 'THEPIRATEBAY', 'thepiratebay', 0))
+        THEPIRATEBAY_TRUSTED = bool(check_setting_int(CFG, 'THEPIRATEBAY', 'thepiratebay_trusted', 0))
         THEPIRATEBAY_PROXY = bool(check_setting_int(CFG, 'THEPIRATEBAY', 'thepiratebay_proxy', 0))
         THEPIRATEBAY_PROXY_URL = check_setting_str(CFG, 'THEPIRATEBAY', 'thepiratebay_proxy_url', '')
         THEPIRATEBAY_URL_OVERRIDE = check_setting_str(CFG, 'THEPIRATEBAY', 'thepiratebay_url_override', '')
 
-        BTN = bool(check_setting_int(CFG, 'BTN', 'btn', 0))    
+        BTN = bool(check_setting_int(CFG, 'BTN', 'btn', 0))
         BTN_API_KEY = check_setting_str(CFG, 'BTN', 'btn_api_key', '')
 
         KICKASS = bool(check_setting_int(CFG, 'KICKASS', 'kickass', 0))
-        
-        TORRENTZ = bool(check_setting_int(CFG, 'TORRENTZ', 'torrentz', 0))    
-        TORRENTZ_VERIFIED = bool(check_setting_int(CFG, 'TORRENTZ', 'torrentz_verified', 0))    
 
-        TORRENTLEECH = bool(check_setting_int(CFG, 'TORRENTLEECH', 'torrentleech', 0))    
-        TORRENTLEECH_USERNAME = check_setting_str(CFG, 'TORRENTLEECH', 'torrentleech_username', '')   
+        TORRENTZ = bool(check_setting_int(CFG, 'TORRENTZ', 'torrentz', 0))
+        TORRENTZ_VERIFIED = bool(check_setting_int(CFG, 'TORRENTZ', 'torrentz_verified', 0))
+
+        TORRENTLEECH = bool(check_setting_int(CFG, 'TORRENTLEECH', 'torrentleech', 0))
+        TORRENTLEECH_USERNAME = check_setting_str(CFG, 'TORRENTLEECH', 'torrentleech_username', '')
         TORRENTLEECH_PASSWORD = check_setting_str(CFG, 'TORRENTLEECH', 'torrentleech_password', '')
-        
-        TORRENTDAY = bool(check_setting_int(CFG, 'TORRENTDAY', 'torrentday', 0))    
-        TORRENTDAY_USERNAME = check_setting_str(CFG, 'TORRENTDAY', 'torrentday_username', '')   
+
+        TORRENTDAY = bool(check_setting_int(CFG, 'TORRENTDAY', 'torrentday', 0))
+        TORRENTDAY_USERNAME = check_setting_str(CFG, 'TORRENTDAY', 'torrentday_username', '')
         TORRENTDAY_PASSWORD = check_setting_str(CFG, 'TORRENTDAY', 'torrentday_password', '')
-        
+
         SCENEACCESS = bool(check_setting_int(CFG, 'SCENEACCESS', 'sceneaccess', 0))
         SCENEACCESS_USERNAME = check_setting_str(CFG, 'SCENEACCESS', 'sceneaccess_username', '')
         SCENEACCESS_PASSWORD = check_setting_str(CFG, 'SCENEACCESS', 'sceneaccess_password', '')
         SCENEACCESS_RSSHASH = check_setting_str(CFG, 'SCENEACCESS', 'sceneaccess_rsshash', '')
-        
+
         IPTORRENTS = bool(check_setting_int(CFG, 'IPTORRENTS', 'iptorrents', 0))
         IPTORRENTS_USERNAME = check_setting_str(CFG, 'IPTORRENTS', 'iptorrents_username', '')
         IPTORRENTS_PASSWORD = check_setting_str(CFG, 'IPTORRENTS', 'iptorrents_password', '')
         IPTORRENTS_UID = check_setting_str(CFG, 'IPTORRENTS', 'iptorrents_uid', '')
         IPTORRENTS_RSSHASH = check_setting_str(CFG, 'IPTORRENTS', 'iptorrents_rsshash', '')
-        
+
         BITHDTV = bool(check_setting_int(CFG, 'BITHDTV', 'bithdtv', 0))
         BITHDTV_USERNAME = check_setting_str(CFG, 'BITHDTV', 'bithdtv_username', '')
         BITHDTV_PASSWORD = check_setting_str(CFG, 'BITHDTV', 'bithdtv_password', '')
-        
+
         FUCKLIMITS = bool(check_setting_int(CFG, 'FUCKLIMITS', 'fucklimits', 0))
         FUCKLIMITS_USERNAME = check_setting_str(CFG, 'FUCKLIMITS', 'fucklimits_username', '')
         FUCKLIMITS_PASSWORD = check_setting_str(CFG, 'FUCKLIMITS', 'fucklimits_password', '')
-        
+
         TORRENTSHACK = bool(check_setting_int(CFG, 'TORRENTSHACK', 'torrentshack', 0))
         TORRENTSHACK_USERNAME = check_setting_str(CFG, 'TORRENTSHACK', 'torrentshack_username', '')
         TORRENTSHACK_PASSWORD = check_setting_str(CFG, 'TORRENTSHACK', 'torrentshack_password', '')
@@ -614,15 +616,15 @@ def initialize(consoleLogging=True):
         TORRENTSHACK_AUTH = check_setting_str(CFG, 'TORRENTSHACK', 'torrentshack_auth', '')
         TORRENTSHACK_PASS_KEY = check_setting_str(CFG, 'TORRENTSHACK', 'torrentshack_pass_key', '')
         TORRENTSHACK_AUTH_KEY = check_setting_str(CFG, 'TORRENTSHACK', 'torrentshack_auth_key', '')
-        
+
         SPEED = bool(check_setting_int(CFG, 'SPEED', 'speed', 0))
         SPEED_USERNAME = check_setting_str(CFG, 'SPEED', 'speed_username', '')
         SPEED_PASSWORD = check_setting_str(CFG, 'SPEED', 'speed_password', '')
         SPEED_RSSHASH = check_setting_str(CFG, 'SPEED', 'speed_rsshash', '')
-        
+
         BTDIGG = bool(check_setting_int(CFG, 'BTDIGG', 'btdigg', 0))
-        
-        PUBLICHD = bool(check_setting_int(CFG, 'PUBLICHD', 'publichd', 0))    
+
+        PUBLICHD = bool(check_setting_int(CFG, 'PUBLICHD', 'publichd', 0))
 
         GIT_PATH = check_setting_str(CFG, 'General', 'git_path', '')
         IGNORE_WORDS = check_setting_str(CFG, 'General', 'ignore_words', IGNORE_WORDS)
@@ -667,7 +669,7 @@ def initialize(consoleLogging=True):
         NZBS = bool(check_setting_int(CFG, 'NZBs', 'nzbs', 0))
         NZBS_UID = check_setting_str(CFG, 'NZBs', 'nzbs_uid', '')
         NZBS_HASH = check_setting_str(CFG, 'NZBs', 'nzbs_hash', '')
-        
+
         CheckSection(CFG, 'Womble')
         WOMBLE = bool(check_setting_int(CFG, 'Womble', 'womble', 1))
 
@@ -693,10 +695,10 @@ def initialize(consoleLogging=True):
         TORRENT_HOST = check_setting_str(CFG, 'TORRENT', 'torrent_host', '')
         TORRENT_PATH = check_setting_str(CFG, 'TORRENT', 'torrent_path', '')
         TORRENT_RATIO = check_setting_str(CFG, 'TORRENT', 'torrent_ratio', '')
-        TORRENT_PAUSED = bool(check_setting_int(CFG, 'TORRENT', 'torrent_paused', 0)) 
+        TORRENT_PAUSED = bool(check_setting_int(CFG, 'TORRENT', 'torrent_paused', 0))
 
         CheckSection(CFG, 'XBMC')
-        USE_XBMC = bool(check_setting_int(CFG, 'XBMC', 'use_xbmc', 0)) 
+        USE_XBMC = bool(check_setting_int(CFG, 'XBMC', 'use_xbmc', 0))
         XBMC_NOTIFY_ONSNATCH = bool(check_setting_int(CFG, 'XBMC', 'xbmc_notify_onsnatch', 0))
         XBMC_NOTIFY_ONDOWNLOAD = bool(check_setting_int(CFG, 'XBMC', 'xbmc_notify_ondownload', 0))
         XBMC_UPDATE_LIBRARY = bool(check_setting_int(CFG, 'XBMC', 'xbmc_update_library', 0))
@@ -733,7 +735,7 @@ def initialize(consoleLogging=True):
         CheckSection(CFG, 'Twitter')
         USE_TWITTER = bool(check_setting_int(CFG, 'Twitter', 'use_twitter', 0))
         TWITTER_NOTIFY_ONSNATCH = bool(check_setting_int(CFG, 'Twitter', 'twitter_notify_onsnatch', 0))
-        TWITTER_NOTIFY_ONDOWNLOAD = bool(check_setting_int(CFG, 'Twitter', 'twitter_notify_ondownload', 0))        
+        TWITTER_NOTIFY_ONDOWNLOAD = bool(check_setting_int(CFG, 'Twitter', 'twitter_notify_ondownload', 0))
         TWITTER_USERNAME = check_setting_str(CFG, 'Twitter', 'twitter_username', '')
         TWITTER_PASSWORD = check_setting_str(CFG, 'Twitter', 'twitter_password', '')
         TWITTER_PREFIX = check_setting_str(CFG, 'Twitter', 'twitter_prefix', 'Sick Beard')
@@ -775,7 +777,7 @@ def initialize(consoleLogging=True):
         TRAKT_USERNAME = check_setting_str(CFG, 'Trakt', 'trakt_username', '')
         TRAKT_PASSWORD = check_setting_str(CFG, 'Trakt', 'trakt_password', '')
         TRAKT_API = check_setting_str(CFG, 'Trakt', 'trakt_api', '')
-        
+
         CheckSection(CFG, 'pyTivo')
         USE_PYTIVO = bool(check_setting_int(CFG, 'pyTivo', 'use_pytivo', 0))
         PYTIVO_NOTIFY_ONSNATCH = bool(check_setting_int(CFG, 'pyTivo', 'pytivo_notify_onsnatch', 0))
@@ -801,10 +803,10 @@ def initialize(consoleLogging=True):
 
         # initialize the main SB database
         db.upgradeDatabase(db.DBConnection(), mainDB.InitialSchema)
-        
+
         # initialize the cache database
         db.upgradeDatabase(db.DBConnection("cache.db"), cache_db.InitialSchema)
-        
+
         # fix up any db problems
         db.sanityCheckDatabase(db.DBConnection(), mainDB.MainSanityCheck)
 
@@ -879,7 +881,7 @@ def initialize(consoleLogging=True):
                                                                       threadName="BACKLOG",
                                                                       runImmediately=True)
         backlogSearchScheduler.action.cycleTime = BACKLOG_SEARCH_FREQUENCY
-        
+
         subtitleQueueScheduler = scheduler.Scheduler(subtitle_queue.SubtitleQueue(),
                                                cycleTime=datetime.timedelta(seconds=3),
                                                threadName="SUBTITLEQUEUE",
@@ -929,7 +931,7 @@ def start():
 
             #start subtitle queue
             subtitleQueueScheduler.thread.start()
-                        
+
             started = True
 
 
@@ -1003,14 +1005,14 @@ def halt():
                 properFinderScheduler.thread.join(10)
             except:
                 pass
-            
+
             subtitleQueueScheduler.abort = True
             logger.log(u"Waiting for the SUBTITLEQUEUE thread to exit")
             try:
                 subtitleQueueScheduler.thread.abort()
             except:
                 pass
-            
+
             __INITIALIZED__ = False
 
 
@@ -1154,6 +1156,7 @@ def save_config():
     new_config['General']['naming_abd_pattern'] = NAMING_ABD_PATTERN
     new_config['General']['naming_multi_ep'] = int(NAMING_MULTI_EP)
     new_config['General']['launch_browser'] = int(LAUNCH_BROWSER)
+    new_config['General']['hide_tvshow_status'] = int(HIDE_TVSHOW_STATUS)
 
     new_config['General']['use_listview'] = int(USE_LISTVIEW)
     new_config['General']['metadata_xbmc'] = METADATA_XBMC
@@ -1173,7 +1176,7 @@ def save_config():
     new_config['General']['rename_episodes'] = int(RENAME_EPISODES)
     new_config['General']['create_missing_show_dirs'] = int(CREATE_MISSING_SHOW_DIRS)
     new_config['General']['add_shows_wo_dir'] = int(ADD_SHOWS_WO_DIR)
-    
+
     new_config['General']['extra_scripts'] = '|'.join(EXTRA_SCRIPTS)
     new_config['General']['git_path'] = GIT_PATH
     new_config['General']['ignore_words'] = IGNORE_WORDS
@@ -1201,7 +1204,7 @@ def save_config():
     new_config['TORRENTZ'] = {}
     new_config['TORRENTZ']['torrentz'] = int(TORRENTZ)
     new_config['TORRENTZ']['torrentz_verified'] = int(TORRENTZ_VERIFIED)
-    
+
     new_config['TORRENTLEECH'] = {}
     new_config['TORRENTLEECH']['torrentleech'] = int(TORRENTLEECH)
     new_config['TORRENTLEECH']['torrentleech_username'] = TORRENTLEECH_USERNAME
@@ -1224,7 +1227,7 @@ def save_config():
     new_config['IPTORRENTS']['iptorrents_password'] = IPTORRENTS_PASSWORD
     new_config['IPTORRENTS']['iptorrents_uid'] = IPTORRENTS_UID
     new_config['IPTORRENTS']['iptorrents_rsshash'] = IPTORRENTS_RSSHASH
-    
+
     new_config['BITHDTV'] = {}
     new_config['BITHDTV']['bithdtv'] = int(BITHDTV)
     new_config['BITHDTV']['bithdtv_username'] = BITHDTV_USERNAME
@@ -1234,7 +1237,7 @@ def save_config():
     new_config['FUCKLIMITS']['fucklimits'] = int(FUCKLIMITS)
     new_config['FUCKLIMITS']['fucklimits_username'] = FUCKLIMITS_USERNAME
     new_config['FUCKLIMITS']['fucklimits_password'] = FUCKLIMITS_PASSWORD
-    
+
     new_config['TORRENTSHACK'] = {}
     new_config['TORRENTSHACK']['torrentshack'] = int(TORRENTSHACK)
     new_config['TORRENTSHACK']['torrentshack_username'] = TORRENTSHACK_USERNAME
@@ -1249,25 +1252,25 @@ def save_config():
     new_config['SPEED']['speed_username'] = SPEED_USERNAME
     new_config['SPEED']['speed_password'] = SPEED_PASSWORD
     new_config['SPEED']['speed_rsshash'] = SPEED_RSSHASH
-    
+
     new_config['BTDIGG'] = {}
     new_config['BTDIGG']['btdigg'] = int(BTDIGG)
-    
+
     new_config['PUBLICHD'] = {}
     new_config['PUBLICHD']['publichd'] = int(PUBLICHD)
-    
+
     new_config['THEPIRATEBAY'] = {}
     new_config['THEPIRATEBAY']['thepiratebay'] = int(THEPIRATEBAY)
-    new_config['THEPIRATEBAY']['thepiratebay_trusted'] = int(THEPIRATEBAY_TRUSTED)    
+    new_config['THEPIRATEBAY']['thepiratebay_trusted'] = int(THEPIRATEBAY_TRUSTED)
     new_config['THEPIRATEBAY']['thepiratebay_proxy'] = int(THEPIRATEBAY_PROXY)
     new_config['THEPIRATEBAY']['thepiratebay_proxy_url'] = THEPIRATEBAY_PROXY_URL
     new_config['THEPIRATEBAY']['thepiratebay_url_override'] = THEPIRATEBAY_URL_OVERRIDE
-    
+
     new_config['DTT'] = {}
     new_config['DTT']['dtt'] = int(DTT)
     new_config['DTT']['dtt_norar'] = int(DTT_NORAR)
     new_config['DTT']['dtt_single'] = int(DTT_SINGLE)
-    
+
     new_config['BTN'] = {}
     new_config['BTN']['btn'] = int(BTN)
     new_config['BTN']['btn_api_key'] = BTN_API_KEY
@@ -1329,14 +1332,14 @@ def save_config():
     new_config['Growl'] = {}
     new_config['Growl']['use_growl'] = int(USE_GROWL)
     new_config['Growl']['growl_notify_onsnatch'] = int(GROWL_NOTIFY_ONSNATCH)
-    new_config['Growl']['growl_notify_ondownload'] = int(GROWL_NOTIFY_ONDOWNLOAD) 
+    new_config['Growl']['growl_notify_ondownload'] = int(GROWL_NOTIFY_ONDOWNLOAD)
     new_config['Growl']['growl_host'] = GROWL_HOST
     new_config['Growl']['growl_password'] = GROWL_PASSWORD
-    
+
     new_config['Prowl'] = {}
     new_config['Prowl']['use_prowl'] = int(USE_PROWL)
     new_config['Prowl']['prowl_notify_onsnatch'] = int(PROWL_NOTIFY_ONSNATCH)
-    new_config['Prowl']['prowl_notify_ondownload'] = int(PROWL_NOTIFY_ONDOWNLOAD) 
+    new_config['Prowl']['prowl_notify_ondownload'] = int(PROWL_NOTIFY_ONDOWNLOAD)
     new_config['Prowl']['prowl_api'] = PROWL_API
     new_config['Prowl']['prowl_priority'] = PROWL_PRIORITY
 
