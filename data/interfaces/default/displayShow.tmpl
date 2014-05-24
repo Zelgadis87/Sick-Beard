@@ -13,6 +13,19 @@
 
 <script type="text/javascript" src="$sbRoot/js/lib/jquery.bookmarkscroll.js?$sbPID"></script>
 
+<script type="text/javascript">
+    var hideShowStatus = #if $sickbeard.HIDE_TVSHOW_STATUS then 'true' else 'false'#;
+    var showStatus = "$show.status";
+    jQuery(document).ready(function(\$) {
+        var \$showStatus = \$('#show_status');
+        if (hideShowStatus) {
+            \$showStatus.one('click', function() {
+                \$showStatus.text(showStatus);
+            });
+        }
+    });
+</script>
+
 
 <div class="h2footer align-right">
 #if (len($seasonResults) > 14):
@@ -71,7 +84,7 @@
 #else if $show.airs:
     <tr><td class="showLegend">Airs: </td><td>$show.airs</td></tr>
 #end if
-    <tr><td class="showLegend">Status: </td><td>$show.status</td></tr>
+    <tr><td class="showLegend">Status: </td><td><div id="show_status">#if not $sickbeard.HIDE_TVSHOW_STATUS then $show.status else '* Hidden to prevent spoilers *'#</td></tr>
 #if $showLoc[1]:
     <tr><td class="showLegend">Location: </td><td>$showLoc[0]</td></tr>
 #else:

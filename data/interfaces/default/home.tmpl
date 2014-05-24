@@ -39,16 +39,16 @@
     is: function(s) {
         return false;
     },
-    format: function(s) { 
+    format: function(s) {
         return s.replace('hd1080p',5).replace('hd720p',4).replace('hd',3).replace('sd',2).replace('any',1).replace('custom',7);
     },
     type: 'numeric'
 });
 
-\$.tablesorter.addParser({ 
+\$.tablesorter.addParser({
     id: 'eps',
     is: function(s) {
-        return false; 
+        return false;
     },
     format: function(s) {
         match = s.match(/^(.*)/);
@@ -70,7 +70,7 @@
     type: 'numeric'
 });
 
-\$(document).ready(function(){ 
+\$(document).ready(function(){
 
     \$("#showListTable:has(tbody tr)").tablesorter({
         sortList: [[6,1],[2,0]],
@@ -90,13 +90,13 @@
         },
         sortStable: true
     });
-    
+
     jQuery("a.link-set-wanted").click( function(e) {
         jQuery.ajax({
             url: this.href,
             complete: function(){ location.reload(); },
         });
-        
+
         e.preventDefault();
         return false;
     });
@@ -115,9 +115,9 @@
         <th>Network</th>
         <th>Quality</th>
         <th>Downloads</th>
-        <th>Active</th>
+        <th style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#">Active</th>
         <th class="nowrap" style="width:25%">Next Episodes</th>
-        <th>Status</th>
+        <th style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#">Status</th>
     </tr>
   </thead>
   <tfoot>
@@ -147,9 +147,9 @@
     <td></td>
     <td></td>
     <td></td>
+    <td style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#"></td>
     <td></td>
-    <td></td>
-    <td></td>
+    <td style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#"></td>
   </tr>
 #end for
 
@@ -202,20 +202,20 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
         //-->
         </script>
     </td>
-    <td align="center"><img src="$sbRoot/images/#if int($curShow.paused) == 0 and $curShow.status != "Ended" then "yes16.png\" alt=\"Y\"" else "no16.png\" alt=\"N\""# width="16" height="16" /></td>
+    <td align="center" style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#"><img src="$sbRoot/images/#if int($curShow.paused) == 0 and $curShow.status != "Ended" then "yes16.png\" alt=\"Y\"" else "no16.png\" alt=\"N\""# width="16" height="16" /></td>
     <td align="center">
         <table style="width:90%;padding:0 5%">
             #set $nextEps = $curShow.getQueuedEpisodes(2)
-            #if $curShow.status != "Ended":
+            #if $curShow.status != "Ended" or $sickbeard.HIDE_TVSHOW_STATUS:
                 <tr>
                     <td colspan="2" style="border-style:none">New episodes will be marked as:</td>
                     <td style="width:100px;text-align:right;border-style:none">
-                        #if $curShow.paused: 
+                        #if $curShow.paused:
                             -- paused --
                         #else if $curShow.auto_download:
                             #if len($nextEps) > 0:
                                 <a style="color:red" href="$sbRoot/home/editShow?show=$curShow.tvdbid" title="Show is set to auto download new episodes; however, there are still episodes that are not yet downloaded.">$statusStrings[$WANTED]</a>
-                            #else: 
+                            #else:
                                 <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">$statusStrings[$WANTED]</a>
                             #end if
                         #else:
@@ -245,7 +245,7 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
         #end for
         </table>
     </td>
-    <td align="center">$curShow.status</td>
+    <td align="center" style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#">#if not $sickbeard.HIDE_TVSHOW_STATUS then $curShow.status else ''#</td>
   </tr>
 
 
