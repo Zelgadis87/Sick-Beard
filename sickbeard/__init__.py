@@ -346,6 +346,7 @@ NMJv2_DATABASE = None
 NMJv2_DBLOC = None
 
 USE_TRAKT = False
+USE_TRAKT_SYNC = True
 TRAKT_USERNAME = None
 TRAKT_PASSWORD = None
 TRAKT_API = ''
@@ -393,7 +394,7 @@ def initialize(consoleLogging=True):
                 NZBGET_PASSWORD, NZBGET_CATEGORY, NZBGET_HOST, currentSearchScheduler, backlogSearchScheduler, \
                 USE_XBMC, XBMC_NOTIFY_ONSNATCH, XBMC_NOTIFY_ONDOWNLOAD, XBMC_UPDATE_FULL, XBMC_UPDATE_ONLYFIRST, \
                 XBMC_UPDATE_LIBRARY, XBMC_HOST, XBMC_USERNAME, XBMC_PASSWORD, \
-                USE_TRAKT, TRAKT_USERNAME, TRAKT_PASSWORD, TRAKT_API, \
+                USE_TRAKT, USE_TRAKT_SYNC, TRAKT_USERNAME, TRAKT_PASSWORD, TRAKT_API, \
                 USE_PLEX, PLEX_NOTIFY_ONSNATCH, PLEX_NOTIFY_ONDOWNLOAD, PLEX_UPDATE_LIBRARY, \
                 PLEX_SERVER_HOST, PLEX_HOST, PLEX_USERNAME, PLEX_PASSWORD, \
                 showUpdateScheduler, __INITIALIZED__, LAUNCH_BROWSER, HIDE_TVSHOW_STATUS, showList, loadingShowList, \
@@ -774,6 +775,7 @@ def initialize(consoleLogging=True):
 
         CheckSection(CFG, 'Trakt')
         USE_TRAKT = bool(check_setting_int(CFG, 'Trakt', 'use_trakt', 0))
+        USE_TRAKT_SYNC = bool(check_setting_int(CFG, 'Trakt', 'use_trakt_sync', 0))
         TRAKT_USERNAME = check_setting_str(CFG, 'Trakt', 'trakt_username', '')
         TRAKT_PASSWORD = check_setting_str(CFG, 'Trakt', 'trakt_password', '')
         TRAKT_API = check_setting_str(CFG, 'Trakt', 'trakt_api', '')
@@ -1385,6 +1387,7 @@ def save_config():
 
     new_config['Trakt'] = {}
     new_config['Trakt']['use_trakt'] = int(USE_TRAKT)
+    new_config['Trakt']['use_trakt_sync'] = int(USE_TRAKT_SYNC)
     new_config['Trakt']['trakt_username'] = TRAKT_USERNAME
     new_config['Trakt']['trakt_password'] = TRAKT_PASSWORD
     new_config['Trakt']['trakt_api'] = TRAKT_API
