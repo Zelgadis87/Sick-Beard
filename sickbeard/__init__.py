@@ -47,6 +47,7 @@ from sickbeard import helpers, db, exceptions, show_queue, search_queue, schedul
 from sickbeard import subtitle_queue
 from sickbeard import logger
 from sickbeard import naming
+from sickbeard import traktSync
 
 from common import SD, SKIPPED, NAMING_REPEAT
 
@@ -394,7 +395,7 @@ def initialize(consoleLogging=True):
                 NZBGET_PASSWORD, NZBGET_CATEGORY, NZBGET_HOST, currentSearchScheduler, backlogSearchScheduler, \
                 USE_XBMC, XBMC_NOTIFY_ONSNATCH, XBMC_NOTIFY_ONDOWNLOAD, XBMC_UPDATE_FULL, XBMC_UPDATE_ONLYFIRST, \
                 XBMC_UPDATE_LIBRARY, XBMC_HOST, XBMC_USERNAME, XBMC_PASSWORD, \
-                USE_TRAKT, USE_TRAKT_SYNC, TRAKT_USERNAME, TRAKT_PASSWORD, TRAKT_API, \
+                USE_TRAKT, USE_TRAKT_SYNC, TRAKT_USERNAME, TRAKT_PASSWORD, TRAKT_API, traktSyncScheduler, \
                 USE_PLEX, PLEX_NOTIFY_ONSNATCH, PLEX_NOTIFY_ONDOWNLOAD, PLEX_UPDATE_LIBRARY, \
                 PLEX_SERVER_HOST, PLEX_HOST, PLEX_USERNAME, PLEX_PASSWORD, \
                 showUpdateScheduler, __INITIALIZED__, LAUNCH_BROWSER, HIDE_TVSHOW_STATUS, showList, loadingShowList, \
@@ -888,6 +889,13 @@ def initialize(consoleLogging=True):
                                                cycleTime=datetime.timedelta(seconds=3),
                                                threadName="SUBTITLEQUEUE",
                                                silent=True)
+
+        traktSyncScheduler = scheduler.Scheduler(traktSync.TraktSync(),
+                                                cycleTime=datetime.timedelta(minutes=30),
+                                                runImmediately=False,
+                                                threadName="TRAKTSYNC",
+                                                silent=True)
+
         showList = []
         loadingShowList = {}
 
@@ -900,7 +908,7 @@ def start():
     global __INITIALIZED__, currentSearchScheduler, backlogSearchScheduler, \
             showUpdateScheduler, versionCheckScheduler, showQueueScheduler, \
             properFinderScheduler, autoPostProcesserScheduler, searchQueueScheduler, \
-            subtitleQueueScheduler, \
+            subtitleQueueScheduler, traktSyncScheduler, \
             started
 
     with INIT_LOCK:
@@ -933,6 +941,9 @@ def start():
 
             #start subtitle queue
             subtitleQueueScheduler.thread.start()
+
+            #start trakt sync
+            traktSyncScheduler.thread.start()
 
             started = True
 
