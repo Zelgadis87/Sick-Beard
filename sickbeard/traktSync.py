@@ -125,9 +125,9 @@ class TraktSync:
                     completed = False
 
             if completed:
-                myDB.action("INSERT OR REPLACE INTO trakt_data(showid, last_watched_season, last_watched_episode, last_updated) VALUES(?, (SELECT MAX(season) FROM tv_episodes WHERE showid = ?), (SELECT MAX(episode) FROM tv_episodes WHERE showid = ?), ?)", [show_id, show_id, show_id, update_datetime.toordinal()])
+                myDB.action("INSERT OR REPLACE INTO trakt_data(showid, last_watched_season, last_watched_episode, last_updated) VALUES(?, (SELECT MAX(season) FROM tv_episodes WHERE showid = ?), (SELECT MAX(episode) FROM tv_episodes WHERE showid = ?), ?)", [show_id, show_id, show_id, update_datetime])
             else:
-                myDB.action("INSERT OR REPLACE INTO trakt_data(showid, last_watched_season, last_watched_episode, last_updated) VALUES(?, ?, ?, ?)", [show_id, nextSeason, nextEpisode, update_datetime.toordinal()])
+                myDB.action("INSERT OR REPLACE INTO trakt_data(showid, last_watched_season, last_watched_episode, last_updated) VALUES(?, ?, ?, ?)", [show_id, nextSeason, nextEpisode, update_datetime])
 
             logger.log("trakt_sync: Show " + str(show_id) + " updated. NextEpisode: " + ("COMPLETE" if completed else str(nextSeason) + "x" + str(nextEpisode)))
 
