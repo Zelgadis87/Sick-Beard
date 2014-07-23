@@ -136,7 +136,7 @@ class TraktSync:
 
     def refreshLibraryStatus(self):
         myDB = db.DBConnection()
-        sql_result = myDB.select("SELECT tv_shows.tvdb_id FROM tv_shows JOIN tv_episodes ON tv_episodes.showid = tv_shows.tvdb_id LEFT JOIN trakt_data ON trakt_data.showid = tv_shows.tvdb_id WHERE trakt_data.last_updated IS NULL OR (trakt_data.last_watched_season < tv_episodes.season OR trakt_data.last_watched_episode < tv_episodes.episode) GROUP BY tv_shows.show_id HAVING tv_episodes.season = MAX(tv_episodes.season) AND tv_episodes.episode = MAX(tv_episodes.episode) ORDER BY trakt_data.last_updated ASC LIMIT 10")
+        sql_result = myDB.select("SELECT tv_shows.tvdb_id, trakt_data.last_updated FROM tv_shows LEFT JOIN trakt_data ON trakt_data.showid = tv_shows.tvdb_id WHERE trakt_data.last_updated IS NULL OR trakt_data.last_watched_season < (SELECT MAX(season) FROM tv_episodes WHERE showid = tv_shows.tvdb_id) OR trakt_data.last_watched_episode < (SELECT MAX(season) FROM tv_episodes WHERE showid = tv_shows.tvdb_id) GROUP BY tv_shows.show_id ORDER BY trakt_data.last_updated ASC LIMIT 10")
 
         count = 0
         for cur_result in sql_result:
