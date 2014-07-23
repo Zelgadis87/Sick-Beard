@@ -17,7 +17,7 @@
 # along with Sick Beard.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import datetime
+import time
 import urllib2
 
 from hashlib import sha1
@@ -103,7 +103,7 @@ class TraktSync:
         return resp
 
     def _updateData(self, show_id):
-        update_datetime = datetime.datetime.now()
+        update_datetime = int(time.time())
 
         method = "user/progress/watched.json/%API%/" + self._username() + "/" + str(show_id)
         response = self._sendToTrakt(method, None, None, None)
