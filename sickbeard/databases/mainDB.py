@@ -23,7 +23,7 @@ import sys
 from sickbeard import db, common, helpers, logger
 
 from sickbeard import encodingKludge as ek
-from sickbeard.name_parser.parser import NameParser, InvalidNameException 
+from sickbeard.name_parser.parser import NameParser, InvalidNameException
 
 MIN_DB_VERSION = 9  # oldest db version we support migrating from
 MAX_DB_VERSION = 15
@@ -140,7 +140,7 @@ class InitialSchema (db.SchemaUpgrade):
 class AddSizeAndSceneNameFields(InitialSchema):
     def test(self):
         return self.checkDBVersion() >= 10
-    
+
     def execute(self):
         backupDatabase(10)
 
@@ -151,12 +151,12 @@ class AddSizeAndSceneNameFields(InitialSchema):
             self.addColumn("tv_episodes", "release_name", "TEXT", "")
 
         ep_results = self.connection.select("SELECT episode_id, location, file_size FROM tv_episodes")
-        
+
         logger.log(u"Adding file size to all episodes in DB, please be patient")
         for cur_ep in ep_results:
             if not cur_ep["location"]:
                 continue
-            
+
             # if there is no size yet then populate it for us
             if (not cur_ep["file_size"] or not int(cur_ep["file_size"])) and ek.ek(os.path.isfile, cur_ep["location"]):
                 cur_size = ek.ek(os.path.getsize, cur_ep["location"])
@@ -164,7 +164,7 @@ class AddSizeAndSceneNameFields(InitialSchema):
 
         # check each snatch to see if we can use it to get a release name from
         history_results = self.connection.select("SELECT * FROM history WHERE provider != -1 ORDER BY date ASC")
-        
+
         logger.log(u"Adding release name to all episodes still in history")
         for cur_result in history_results:
             # find the associated download, if there isn't one then ignore it
@@ -176,7 +176,7 @@ class AddSizeAndSceneNameFields(InitialSchema):
 
             nzb_name = cur_result["resource"]
             file_name = ek.ek(os.path.basename, download_results[0]["resource"])
-            
+
             # take the extension off the filename, it's not needed
             if '.' in file_name:
                 file_name = file_name.rpartition('.')[0]
@@ -188,13 +188,13 @@ class AddSizeAndSceneNameFields(InitialSchema):
                 logger.log(u"The episode " + nzb_name + " was found in history but doesn't exist on disk anymore, skipping", logger.DEBUG)
                 continue
 
-            # get the status/quality of the existing ep and make sure it's what we expect 
+            # get the status/quality of the existing ep and make sure it's what we expect
             ep_status, ep_quality = common.Quality.splitCompositeStatus(int(ep_results[0]["status"]))
             if ep_status != common.DOWNLOADED:
                 continue
-            
+
             if ep_quality != int(cur_result["quality"]):
-                continue 
+                continue
 
             # make sure this is actually a real release name and not a season pack or something
             for cur_name in (nzb_name, file_name):
@@ -212,26 +212,26 @@ class AddSizeAndSceneNameFields(InitialSchema):
 
         # check each snatch to see if we can use it to get a release name from
         empty_results = self.connection.select("SELECT episode_id, location FROM tv_episodes WHERE release_name = ''")
-        
+
         logger.log(u"Adding release name to all episodes with obvious scene filenames")
         for cur_result in empty_results:
-            
+
             ep_file_name = ek.ek(os.path.basename, cur_result["location"])
             ep_file_name = os.path.splitext(ep_file_name)[0]
 
             # only want to find real scene names here so anything with a space in it is out
             if ' ' in ep_file_name:
                 continue
-            
+
             try:
                 np = NameParser(False)
                 parse_result = np.parse(ep_file_name)
             except InvalidNameException:
                 continue
-        
+
             if not parse_result.release_group:
                 continue
-            
+
             logger.log(u"Name " + ep_file_name + " gave release group of " + parse_result.release_group + ", seems valid", logger.DEBUG)
             self.connection.action("UPDATE tv_episodes SET release_name = ? WHERE episode_id = ?", [ep_file_name, cur_result["episode_id"]])
 
@@ -242,7 +242,7 @@ class AddSizeAndSceneNameFields(InitialSchema):
 class RenameSeasonFolders(AddSizeAndSceneNameFields):
     def test(self):
         return self.checkDBVersion() >= 11
-    
+
     def execute(self):
         backupDatabase(11)
         # rename the column
@@ -250,7 +250,7 @@ class RenameSeasonFolders(AddSizeAndSceneNameFields):
         self.connection.action("CREATE TABLE tv_shows (show_id INTEGER PRIMARY KEY, location TEXT, show_name TEXT, tvdb_id NUMERIC, network TEXT, genre TEXT, runtime NUMERIC, quality NUMERIC, airs TEXT, status TEXT, flatten_folders NUMERIC, paused NUMERIC, startyear NUMERIC, tvr_id NUMERIC, tvr_name TEXT, air_by_date NUMERIC, lang TEXT)")
         sql = "INSERT INTO tv_shows(show_id, location, show_name, tvdb_id, network, genre, runtime, quality, airs, status, flatten_folders, paused, startyear, tvr_id, tvr_name, air_by_date, lang) SELECT show_id, location, show_name, tvdb_id, network, genre, runtime, quality, airs, status, seasonfolders, paused, startyear, tvr_id, tvr_name, air_by_date, lang FROM tmp_tv_shows"
         self.connection.action(sql)
-        
+
         # flip the values to be opposite of what they were before
         self.connection.action("UPDATE tv_shows SET flatten_folders = 2 WHERE flatten_folders = 1")
         self.connection.action("UPDATE tv_shows SET flatten_folders = 1 WHERE flatten_folders = 0")
@@ -265,7 +265,7 @@ class AutoDownload(RenameSeasonFolders):
 
     def execute(self):
         self.addColumn("tv_shows", "auto_download", default=1)
-        
+
 # included in build 500 (2013-05-11)
 class Add1080pAndRawHDQualities(AutoDownload):
     """Add support for 1080p related qualities along with RawHD
@@ -395,7 +395,7 @@ class AddSubtitleColumns(Add1080pAndRawHDQualities):
 
     def test(self):
         return self.checkDBVersion() >= 13
-    
+
     def execute(self):
         backupDatabase(13)
 
@@ -446,3 +446,10 @@ class AddLastUpdateTVDB(AddShowidTvdbidIndex):
         # cleanup and reduce db if any previous data was removed
         logger.log(u"Performing a vacuum on the database.", logger.DEBUG)
         self.connection.action("VACUUM")
+
+class TraktSync(AddLastUpdateTVDB):
+    def test(self):
+        return self.hasTable("trakt_data")
+
+    def execute(self):
+        self.connection.action("CREATE TABLE trakt_data (showid INTEGER PRIMARY KEY, last_watched_season INTEGER, last_watched_episode INTEGER, last_updated INTEGER);")
