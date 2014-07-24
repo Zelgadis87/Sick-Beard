@@ -102,7 +102,7 @@ class TraktSync:
 
         return resp
 
-    def _updateData(self):
+    def _updateNextEpisodeData(self):
         update_datetime = int(time.time())
 
         method = "user/progress/watched.json/%API%/" + self._username() + "/"
@@ -119,8 +119,8 @@ class TraktSync:
                 show_id = data["show"]["tvdb_id"]
                 if data["next_episode"] == False:
                     # the user has completed this serie.
-                    nextSeason = False
-                    nextEpisode = False
+                    nextSeason = -1
+                    nextEpisode = -1
                 else:
                     nextSeason = data["next_episode"]["season"]
                     nextEpisode = data["next_episode"]["number"]
@@ -129,7 +129,29 @@ class TraktSync:
 
                 logger.log("Show " + str(show_id) + " updated. NextEpisode: " + ("COMPLETE" if nextSeason == False else str(nextSeason) + "x" + str(nextEpisode)), logger.DEBUG)
 
-            logger.log("Synchronization complete.")
+            logger.log("Next episode synchronization complete.")
+
+    def _updateWatchedData(self):
+        method = "user/watched.json/%API%/" + self._username() + "/"
+        response = self._sendToTrakt(method, None, None, None)
+
+        if response != False:
+            myDB = db.DBConnection()
+
+            for data in response:
+
+                if data["type"] == "episode":
+                    # We are only interested in tv episodes.
+                    show_id = data["show"]["tvdb_id"]
+                    season = data["episode"]["season"]
+                    episode = data["episode"]["number"]
+                    watched = data["watched"]
+
+                    myDB.action("UPDATE tv_episodes SET watched=? WHERE showid=? AND season=? AND episode=? AND (watched IS NULL OR watched < ?)", [watched, show_id, season, episode, watched])
+
+            logger.log("Watched episodes synchronization complete.")
 
     def run(self):
-        self._updateData()
+        self._updateNextEpisodeData()
+        self._updateWatchedData()
+        logger.log("Synchronization complete.")
