@@ -160,7 +160,7 @@ Change selected episodes to
 
   #set $epStr = str($epResult["season"]) + "x" + str($epResult["episode"])
   #set $epLoc = $epResult["location"]
-  <tr class="$Overview.overviewStrings[$epCats[$epStr]] season-$curSeason">
+  <tr class="$Overview.overviewStrings[$epCats[$epStr]] season-$curSeason" style="font-weight: #if $epResult["next"] then 'bold' else ''#">
     <td width="1%">
 #if int($epResult["status"]) != $UNAIRED
       <input type="checkbox" class="epCheck" id="<%=str(epResult["season"])+'x'+str(epResult["episode"])%>" name="<%=str(epResult["season"]) +"x"+str(epResult["episode"]) %>" />

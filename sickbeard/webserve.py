@@ -2237,7 +2237,7 @@ class Home:
         )
 
         sqlResults = myDB.select(
-            "SELECT * FROM tv_episodes WHERE showid = ? ORDER BY season DESC, episode DESC",
+            "SELECT ep.*, trakt.showid next FROM tv_episodes ep LEFT JOIN trakt_data trakt ON (trakt.showid = ep.showid AND trakt.next_season = ep.season AND trakt.next_episode = ep.episode) WHERE ep.showid = ? ORDER BY ep.season DESC, ep.episode DESC",
             [showObj.tvdbid]
         )
 

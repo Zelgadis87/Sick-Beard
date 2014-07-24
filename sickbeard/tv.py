@@ -233,7 +233,7 @@ class TVShow(object):
             result = cur_provider.create_show_metadata(self) or result
 
         return result
-    
+
     def writeMetadata(self, show_only=False):
 
         if not ek.ek(os.path.isdir, self._location):
@@ -705,20 +705,21 @@ class TVShow(object):
         self.saveToDB()
 
     def getQueuedEpisodes(self, limit=1):
-        """ 
-        Fetches the first 'limit' episodes in chronological time of this TVShow 
+        """
+        Fetches the first 'limit' episodes in chronological time of this TVShow
         that are either waiting, wanted or snatched.
         """
-        
+
         myDB = db.DBConnection()
-        query = "SELECT season, episode FROM tv_episodes WHERE showid = ? AND season > 0 AND status IN (" + (",".join([str(x) for x in (Quality.SNATCHED + Quality.SNATCHED_PROPER + [WANTED, WAITING])])) + ") ORDER BY season ASC, episode ASC LIMIT ?"
+        query = "SELECT season, episode, trakt.showid next FROM tv_episodes ep LEFT JOIN trakt_data trakt ON (trakt.showid = ep.showid AND trakt.next_season = ep.season AND trakt.next_episode = ep.episode) WHERE ep.showid = ? AND ep.season > 0 AND ep.status IN (" + (",".join([str(x) for x in (Quality.SNATCHED + Quality.SNATCHED_PROPER + [WANTED, WAITING])])) + ") ORDER BY ep.season ASC, ep.episode ASC LIMIT ?"
         params = [self.tvdbid, limit]
         sqlResults = myDB.select(query, params)
-        
+
         foundEps = []
         if sqlResults != None and len(sqlResults) > 0:
             for sqlEp in sqlResults:
                 curEp = self.getEpisode(int(sqlEp["season"]), int(sqlEp["episode"]))
+                curEp.nextEpisodeToWatch = sqlEp["next"]
                 foundEps.append(curEp)
         return foundEps
 
@@ -973,6 +974,7 @@ class TVEpisode(object):
         self.dirty = True
 
         self.show = show
+        self.nextEpisodeToWatch = False
         self._location = file
 
         self.lock = threading.Lock()
@@ -1034,7 +1036,7 @@ class TVEpisode(object):
                 else:
                     new_result = False
                 cur_tbn = new_result or cur_tbn
-                
+
                 if cur_provider.subtitles:
                     new_result = cur_provider._has_episode_subtitle(self)
                 else:
