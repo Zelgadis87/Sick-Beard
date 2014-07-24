@@ -102,49 +102,34 @@ class TraktSync:
 
         return resp
 
-    def _updateData(self, show_id):
+    def _updateData(self):
         update_datetime = int(time.time())
 
-        method = "user/progress/watched.json/%API%/" + self._username() + "/" + str(show_id)
+        method = "user/progress/watched.json/%API%/" + self._username() + "/"
         response = self._sendToTrakt(method, None, None, None)
 
         if response != False:
             myDB = db.DBConnection()
 
-            completed = False
             nextSeason = 1
             nextEpisode = 1
-            if len(response) > 0:
-                data = response[0]
+
+            myDB.action("DELETE FROM trakt_data;")
+            for data in response:
+                show_id = data["show"]["tvdb_id"]
                 if data["next_episode"] == False:
                     # the user has completed this serie.
-                   completed = True
+                    nextSeason = False
+                    nextEpisode = False
                 else:
                     nextSeason = data["next_episode"]["season"]
                     nextEpisode = data["next_episode"]["number"]
-                    completed = False
 
-            if completed:
-                myDB.action("INSERT OR REPLACE INTO trakt_data(showid, last_watched_season, last_watched_episode, last_updated) VALUES(?, (SELECT MAX(season) FROM tv_episodes WHERE showid = ?), (SELECT MAX(episode) FROM tv_episodes WHERE showid = ?), ?)", [show_id, show_id, show_id, update_datetime])
-            else:
-                myDB.action("INSERT OR REPLACE INTO trakt_data(showid, last_watched_season, last_watched_episode, last_updated) VALUES(?, ?, ?, ?)", [show_id, nextSeason, nextEpisode, update_datetime])
+                myDB.action("INSERT OR REPLACE INTO trakt_data(showid, next_season, next_episode, last_updated) VALUES(?, ?, ?, ?)", [show_id, nextSeason, nextEpisode, update_datetime])
 
-            logger.log("trakt_sync: Show " + str(show_id) + " updated. NextEpisode: " + ("COMPLETE" if completed else str(nextSeason) + "x" + str(nextEpisode)))
+                logger.log("Show " + str(show_id) + " updated. NextEpisode: " + ("COMPLETE" if nextSeason == False else str(nextSeason) + "x" + str(nextEpisode)), logger.DEBUG)
 
-    def refreshShowStatus(self, show_obj):
-        self._updateData(show_obj.tvdb_id)
-
-    def refreshLibraryStatus(self):
-        myDB = db.DBConnection()
-        sql_result = myDB.select("SELECT tv_shows.tvdb_id, trakt_data.last_updated FROM tv_shows LEFT JOIN trakt_data ON trakt_data.showid = tv_shows.tvdb_id WHERE trakt_data.last_updated IS NULL OR trakt_data.last_watched_season < (SELECT MAX(season) FROM tv_episodes WHERE showid = tv_shows.tvdb_id) OR trakt_data.last_watched_episode < (SELECT MAX(season) FROM tv_episodes WHERE showid = tv_shows.tvdb_id) GROUP BY tv_shows.show_id ORDER BY trakt_data.last_updated ASC LIMIT 10")
-
-        count = 0
-        for cur_result in sql_result:
-            count += 1
-            self._updateData(cur_result['tvdb_id'])
-
-        if count == 0:
-            logger.log("trakt_sync: No show to update.")
+            logger.log("Synchronization complete.")
 
     def run(self):
-        self.refreshLibraryStatus()
+        self._updateData()

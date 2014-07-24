@@ -891,8 +891,8 @@ def initialize(consoleLogging=True):
                                                silent=True)
 
         traktSyncScheduler = scheduler.Scheduler(traktSync.TraktSync(),
-                                                cycleTime=datetime.timedelta(minutes=30),
-                                                runImmediately=False,
+                                                cycleTime=datetime.timedelta(hours=2),
+                                                runImmediately=True,
                                                 threadName="TRAKTSYNC",
                                                 silent=True)
 
