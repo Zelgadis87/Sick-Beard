@@ -1351,7 +1351,7 @@ class CMD_SickBeardGetDefaults(ApiCall):
 
         anyQualities, bestQualities = _mapQuality(sickbeard.QUALITY_DEFAULT)
 
-        data = {"status": statusStrings[sickbeard.STATUS_DEFAULT].lower(), "flatten_folders": int(sickbeard.FLATTEN_FOLDERS_DEFAULT), "initial": anyQualities, "archive": bestQualities, "future_show_paused": int(sickbeard.COMING_EPS_DISPLAY_PAUSED) }
+        data = {"status": statusStrings[sickbeard.STATUS_DEFAULT].lower(), "flatten_folders": int(sickbeard.FLATTEN_FOLDERS_DEFAULT), "stay_ahead": int(sickbeard.STAY_AHEAD_DEFAULT), "initial": anyQualities, "archive": bestQualities, "future_show_paused": int(sickbeard.COMING_EPS_DISPLAY_PAUSED) }
         return _responds(RESULT_SUCCESS, data)
 
 
@@ -1528,6 +1528,7 @@ class CMD_SickBeardSetDefaults(ApiCall):
              "optionalParameters": {"initial": {"desc": "initial quality for the show"},
                                     "archive": {"desc": "archive quality for the show"},
                                     "flatten_folders": {"desc": "flatten subfolders within the show directory"},
+                                    "stay_ahead": {"desc": "number of episodes to download ahead of the last watched one"},
                                     "status": {"desc": "status of missing episodes"}
                                     }
              }
@@ -1589,6 +1590,9 @@ class CMD_SickBeardSetDefaults(ApiCall):
 
         if self.future_show_paused != None:
             sickbeard.COMING_EPS_DISPLAY_PAUSED = int(self.future_show_paused)
+
+        if self.stay_ahead != None:
+            sickbeard.STAY_AHEAD_DEFAULT = int(self.stay_ahead)
 
         return _responds(RESULT_SUCCESS, msg="Saved defaults")
 
