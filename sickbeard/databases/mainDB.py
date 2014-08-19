@@ -261,10 +261,10 @@ class RenameSeasonFolders(AddSizeAndSceneNameFields):
 
 class AutoDownload(RenameSeasonFolders):
     def test(self):
-        return self.hasColumn("tv_shows", "auto_download")
+        return self.hasColumn("tv_shows", "stay_ahead")
 
     def execute(self):
-        self.addColumn("tv_shows", "auto_download", default=1)
+        self.addColumn("tv_shows", "stay_ahead", default=1)
 
 # included in build 500 (2013-05-11)
 class Add1080pAndRawHDQualities(AutoDownload):
@@ -453,4 +453,4 @@ class TraktSync(AddLastUpdateTVDB):
 
     def execute(self):
         self.connection.action("CREATE TABLE trakt_data (showid INTEGER PRIMARY KEY, next_season INTEGER, next_episode INTEGER, last_updated INTEGER);")
-        self.connection.action("ALTER TABLE tv_episodes ADD COLUMN watched INTEGER;")
+        self.connection.action("ALTER TABLE tv_episodes ADD COLUMN last_watched INTEGER;")

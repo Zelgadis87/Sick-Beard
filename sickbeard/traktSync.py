@@ -31,6 +31,7 @@ import sickbeard
 
 from sickbeard import logger
 from sickbeard import db
+from common import DOWNLOADED, SNATCHED, SNATCHED_PROPER, ARCHIVED, IGNORED, UNAIRED, WANTED, SKIPPED, UNKNOWN, WAITING
 
 class TraktSync:
     """
@@ -102,7 +103,7 @@ class TraktSync:
 
         return resp
 
-    def _updateNextEpisodeData(self):
+    def updateNextEpisodeData(self):
         update_datetime = int(time.time())
 
         method = "user/progress/watched.json/%API%/" + self._username() + "/"
@@ -131,7 +132,7 @@ class TraktSync:
 
             logger.log("Next episode synchronization complete.")
 
-    def _updateWatchedData(self):
+    def updateWatchedData(self):
         method = "user/watched.json/%API%/" + self._username() + "/"
         response = self._sendToTrakt(method, None, None, None)
 
@@ -147,11 +148,20 @@ class TraktSync:
                     episode = data["episode"]["number"]
                     watched = data["watched"]
 
-                    myDB.action("UPDATE tv_episodes SET watched=? WHERE showid=? AND season=? AND episode=? AND (watched IS NULL OR watched < ?)", [watched, show_id, season, episode, watched])
+                    myDB.action("UPDATE tv_episodes SET last_watched=? WHERE showid=? AND season=? AND episode=? AND (last_watched IS NULL OR last_watched < ?)", [watched, show_id, season, episode, watched])
 
             logger.log("Watched episodes synchronization complete.")
 
+    def updateEpisodesToAutoDownload(self):
+        myDB = db.DBConnection()
+        showList = list(sickbeard.showList)
+
+        for show in showList:
+            if show.stay_ahead > 0:
+                myDB.action("UPDATE tv_episodes set status = ? where status = ? and episode_id IN (select ep.episode_id from tv_episodes ep left join trakt_data trakt on trakt.showid = ep.showid where ep.showid = ? AND ((trakt.next_season IS NULL) OR (trakt.next_season > -1 AND ((ep.season > trakt.next_season) OR (ep.season = trakt.next_season AND ep.episode >= trakt.next_episode)))) order by ep.season ASC, ep.episode ASC limit ?)", [WANTED, WAITING, show.tvdbid, show.stay_ahead])
+
     def run(self):
-        self._updateNextEpisodeData()
-        self._updateWatchedData()
+        self.updateNextEpisodeData()
+        self.updateWatchedData()
+        self.updateEpisodesToAutoDownload()
         logger.log("Synchronization complete.")

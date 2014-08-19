@@ -208,22 +208,14 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
             #set $nextEps = $curShow.getQueuedEpisodes(2)
             #if $curShow.status != "Ended" or $sickbeard.HIDE_TVSHOW_STATUS:
                 <tr>
-                    <td colspan="2" style="border-style:none">New episodes will be marked as:</td>
+                    <td colspan="2" style="border-style:none">Autodownloading:</td>
                     <td style="width:100px;text-align:right;border-style:none">
                         #if $curShow.paused:
                             -- paused --
-                        #else if $curShow.auto_download:
-                            #if len($nextEps) > 0:
-                                <a style="color:red" href="$sbRoot/home/editShow?show=$curShow.tvdbid" title="Show is set to auto download new episodes; however, there are still episodes that are not yet downloaded.">$statusStrings[$WANTED]</a>
-                            #else:
-                                <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">$statusStrings[$WANTED]</a>
-                            #end if
+                        #else if $curShow.stay_ahead > 0:
+                            <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">$curShow.stay_ahead ahead</a>
                         #else:
-                            #if len($nextEps) == 0:
-                                <a style="color:orange" href="$sbRoot/home/editShow?show=$curShow.tvdbid" title="Show is set to not auto download new episodes; however, there are no episodes left to be downloaded."' else '' #>$statusStrings[$WAITING]</a>
-                            #else:
-                               <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">$statusStrings[$WAITING]</a>
-                            #end if
+                            <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">None</a>
                         #end if
                     </td>
                 </tr>

@@ -66,7 +66,7 @@ class TVShow(object):
         self.airs = ""
         self.startyear = 0
         self.paused = 0
-        self.auto_download = 0
+        self.stay_ahead = int(sickbeard.STAY_AHEAD_DEFAULT)
         self.air_by_date = 0
         self.lang = lang
         self.last_update_tvdb = 1
@@ -645,7 +645,7 @@ class TVShow(object):
             self.quality = int(sqlResults[0]["quality"])
             self.flatten_folders = int(sqlResults[0]["flatten_folders"])
             self.paused = int(sqlResults[0]["paused"])
-            self.auto_download = int(sqlResults[0]["auto_download"])
+            self.stay_ahead = int(sqlResults[0]["stay_ahead"])
 
             self._location = sqlResults[0]["location"]
 
@@ -831,7 +831,7 @@ class TVShow(object):
                         "status": self.status,
                         "flatten_folders": self.flatten_folders,
                         "paused": self.paused,
-                        "auto_download": self.auto_download,
+                        "stay_ahead": self.stay_ahead,
                         "air_by_date": self.air_by_date,
                         "startyear": self.startyear,
                         "tvr_name": self.tvrname,
@@ -891,9 +891,9 @@ class TVShow(object):
             if epStatus == WANTED:
                 logger.log(u"Ep is WANTED, definitely get it", logger.DEBUG)
                 return True
-            elif epStatus == UNAIRED and self.auto_download == 1:
-                logger.log(u"Ep is UNAIRED but the TvShow is in auto download mode so we are getting it", logger.DEBUG)
-                return True
+            # elif epStatus == UNAIRED and self.auto_download == 1:
+            #    logger.log(u"Ep is UNAIRED but the TvShow is in auto download mode so we are getting it", logger.DEBUG)
+            #    return True
             elif manualSearch:
                 logger.log(u"Usually I would ignore this ep but because you forced the search I'm overriding the default and allowing the quality", logger.DEBUG)
                 return True
@@ -975,6 +975,7 @@ class TVEpisode(object):
 
         self.show = show
         self.nextEpisodeToWatch = False
+        self.watched = False
         self._location = file
 
         self.lock = threading.Lock()
@@ -1116,6 +1117,8 @@ class TVEpisode(object):
             if sqlResults[0]["release_name"] != None:
                 self.release_name = sqlResults[0]["release_name"]
 
+            self.watched = sqlResults[0]["last_watched"]
+
             self.dirty = False
             return True
 
@@ -1225,8 +1228,8 @@ class TVEpisode(object):
                     # If the episode is UNAIRED and the airdate has passed, OR the episode is new:
                     if self.show.paused:
                         self.status = IGNORED
-                    elif self.show.auto_download:
-                        self.status = WANTED
+                    #elif self.show.auto_download:
+                    #    self.status = WANTED
                     else:
                         self.status = WAITING
 
