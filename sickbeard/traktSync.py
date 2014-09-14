@@ -130,7 +130,9 @@ class TraktSync:
 
                 logger.log("Show " + str(show_id) + " updated. NextEpisode: " + ("COMPLETE" if nextSeason == False else str(nextSeason) + "x" + str(nextEpisode)), logger.DEBUG)
 
-            logger.log("Next episode synchronization complete.")
+            logger.log("Next episodes synchronization complete.")
+        else:
+            logger.log("Next episodes synchronization failed.")
 
     def updateWatchedData(self):
         method = "user/watched.json/%API%/" + self._username() + "/"
@@ -143,22 +145,34 @@ class TraktSync:
 
                 if data["type"] == "episode":
                     # We are only interested in tv episodes.
+                    show_name = data["show"]["title"]
                     show_id = data["show"]["tvdb_id"]
                     season = data["episode"]["season"]
                     episode = data["episode"]["number"]
                     watched = data["watched"]
 
-                    myDB.action("UPDATE tv_episodes SET last_watched=? WHERE showid=? AND season=? AND episode=? AND (last_watched IS NULL OR last_watched < ?)", [watched, show_id, season, episode, watched])
+                    cursor = myDB.action("UPDATE tv_episodes SET last_watched=? WHERE showid=? AND season=? AND episode=? AND (last_watched IS NULL OR last_watched < ?)", [watched, show_id, season, episode, watched])
+                    if cursor.rowcount > 0:
+                        logger.log(str(cursor.rowcount) + " episodes of " + show_name + " marked as watched.")
 
             logger.log("Watched episodes synchronization complete.")
+        else:
+            logger.log("Watched episodes synchronization failed.")
 
     def updateEpisodesToAutoDownload(self):
         myDB = db.DBConnection()
         showList = list(sickbeard.showList)
+        updatedShows = []
 
         for show in showList:
             if show.stay_ahead > 0:
-                myDB.action("UPDATE tv_episodes set status = ? where status = ? and episode_id IN (select ep.episode_id from tv_episodes ep left join trakt_data trakt on trakt.showid = ep.showid where ep.showid = ? AND ep.season > 0 AND ((trakt.next_season IS NULL) OR (trakt.next_season > -1 AND ((ep.season > trakt.next_season) OR (ep.season = trakt.next_season AND ep.episode >= trakt.next_episode)))) order by ep.season ASC, ep.episode ASC limit ?)", [WANTED, WAITING, show.tvdbid, show.stay_ahead])
+                cursor = myDB.action("UPDATE tv_episodes set status = ? where status = ? and episode_id IN (select ep.episode_id from tv_episodes ep left join trakt_data trakt on trakt.showid = ep.showid where ep.showid = ? AND ep.season > 0 AND ((trakt.next_season IS NULL) OR (trakt.next_season > -1 AND ((ep.season > trakt.next_season) OR (ep.season = trakt.next_season AND ep.episode >= trakt.next_episode)))) order by ep.season ASC, ep.episode ASC limit ?)", [WANTED, WAITING, show.tvdbid, show.stay_ahead])
+                if cursor.rowcount > 0:
+                    updatedShows.append(show)
+                    logger.log(str(cursor.rowcount) + " episodes of " + show.name + " queued for download.")
+
+        if updatedShows:
+            sickbeard.backlogSearchScheduler.action.searchBacklog(updatedShows)
 
     def run(self):
         self.updateNextEpisodeData()
