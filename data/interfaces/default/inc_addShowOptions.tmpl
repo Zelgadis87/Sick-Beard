@@ -26,7 +26,14 @@
         #set global $bestQualities = $qualities[1]
         #include $os.path.join($sickbeard.PROG_DIR, "data/interfaces/default/inc_qualityChooser.tmpl")
 
-        <div class="field-pair alt">
+         <div class="field-pair alt">
+            <input class="cb" type="number" min="0" name="stayAhead" id="stayAhead" value="$sickbeard.STAY_AHEAD_DEFAULT" />
+            <label for="flatten_folders" class="clearfix">
+                <span class="component-desc">How many episodes to keep ahead?</span>
+            </label>
+        </div>
+
+        <div class="field-pair">
             <label for="saveDefaultsButton" class="nocheck clearfix">
                 <span class="component-title"><input class="btn" type="button" id="saveDefaultsButton" value="Save Defaults" disabled="disabled" /></span>
                 <span class="component-desc">Persist current values as the defaults</span>

@@ -66,7 +66,7 @@ class TVShow(object):
         self.airs = ""
         self.startyear = 0
         self.paused = 0
-        self.auto_download = 0
+        self.stay_ahead = int(sickbeard.STAY_AHEAD_DEFAULT)
         self.air_by_date = 0
         self.lang = lang
         self.last_update_tvdb = 1
@@ -233,7 +233,7 @@ class TVShow(object):
             result = cur_provider.create_show_metadata(self) or result
 
         return result
-    
+
     def writeMetadata(self, show_only=False):
 
         if not ek.ek(os.path.isdir, self._location):
@@ -645,7 +645,7 @@ class TVShow(object):
             self.quality = int(sqlResults[0]["quality"])
             self.flatten_folders = int(sqlResults[0]["flatten_folders"])
             self.paused = int(sqlResults[0]["paused"])
-            self.auto_download = int(sqlResults[0]["auto_download"])
+            self.stay_ahead = int(sqlResults[0]["stay_ahead"])
 
             self._location = sqlResults[0]["location"]
 
@@ -705,20 +705,21 @@ class TVShow(object):
         self.saveToDB()
 
     def getQueuedEpisodes(self, limit=1):
-        """ 
-        Fetches the first 'limit' episodes in chronological time of this TVShow 
+        """
+        Fetches the first 'limit' episodes in chronological time of this TVShow
         that are either waiting, wanted or snatched.
         """
-        
+
         myDB = db.DBConnection()
-        query = "SELECT season, episode FROM tv_episodes WHERE showid = ? AND season > 0 AND status IN (" + (",".join([str(x) for x in (Quality.SNATCHED + Quality.SNATCHED_PROPER + [WANTED, WAITING])])) + ") ORDER BY season ASC, episode ASC LIMIT ?"
+        query = "SELECT season, episode, trakt.showid next FROM tv_episodes ep LEFT JOIN trakt_data trakt ON (trakt.showid = ep.showid AND trakt.next_season = ep.season AND trakt.next_episode = ep.episode) WHERE ep.showid = ? AND ep.season > 0 AND ep.status IN (" + (",".join([str(x) for x in (Quality.SNATCHED + Quality.SNATCHED_PROPER + [WANTED, WAITING])])) + ") ORDER BY ep.season ASC, ep.episode ASC LIMIT ?"
         params = [self.tvdbid, limit]
         sqlResults = myDB.select(query, params)
-        
+
         foundEps = []
         if sqlResults != None and len(sqlResults) > 0:
             for sqlEp in sqlResults:
                 curEp = self.getEpisode(int(sqlEp["season"]), int(sqlEp["episode"]))
+                curEp.nextEpisodeToWatch = sqlEp["next"]
                 foundEps.append(curEp)
         return foundEps
 
@@ -830,7 +831,7 @@ class TVShow(object):
                         "status": self.status,
                         "flatten_folders": self.flatten_folders,
                         "paused": self.paused,
-                        "auto_download": self.auto_download,
+                        "stay_ahead": self.stay_ahead,
                         "air_by_date": self.air_by_date,
                         "startyear": self.startyear,
                         "tvr_name": self.tvrname,
@@ -889,9 +890,6 @@ class TVShow(object):
         if quality in anyQualities + bestQualities:
             if epStatus == WANTED:
                 logger.log(u"Ep is WANTED, definitely get it", logger.DEBUG)
-                return True
-            elif epStatus == UNAIRED and self.auto_download == 1:
-                logger.log(u"Ep is UNAIRED but the TvShow is in auto download mode so we are getting it", logger.DEBUG)
                 return True
             elif manualSearch:
                 logger.log(u"Usually I would ignore this ep but because you forced the search I'm overriding the default and allowing the quality", logger.DEBUG)
@@ -973,6 +971,8 @@ class TVEpisode(object):
         self.dirty = True
 
         self.show = show
+        self.nextEpisodeToWatch = False
+        self.watched = False
         self._location = file
 
         self.lock = threading.Lock()
@@ -1034,7 +1034,7 @@ class TVEpisode(object):
                 else:
                     new_result = False
                 cur_tbn = new_result or cur_tbn
-                
+
                 if cur_provider.subtitles:
                     new_result = cur_provider._has_episode_subtitle(self)
                 else:
@@ -1113,6 +1113,8 @@ class TVEpisode(object):
 
             if sqlResults[0]["release_name"] != None:
                 self.release_name = sqlResults[0]["release_name"]
+
+            self.watched = sqlResults[0]["last_watched"]
 
             self.dirty = False
             return True
@@ -1223,8 +1225,6 @@ class TVEpisode(object):
                     # If the episode is UNAIRED and the airdate has passed, OR the episode is new:
                     if self.show.paused:
                         self.status = IGNORED
-                    elif self.show.auto_download:
-                        self.status = WANTED
                     else:
                         self.status = WAITING
 

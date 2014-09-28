@@ -871,6 +871,14 @@
 
                         <div id="content_use_trakt">
                             <div class="field-pair">
+                                <input type="checkbox" name="use_trakt_sync" id="use_trakt_sync" #if $sickbeard.USE_TRAKT_SYNC then "checked=\"checked\"" else ""# />
+                                <label class="clearfix" for="use_trakt_sync">
+                                    <span class="component-title">Update watched status</span>
+                                    <span class="component-desc">Should Sick Beard refresh data from Trakt.tv?</span>
+                                </label>
+                            </div>
+
+                            <div class="field-pair">
                                 <label class="nocheck clearfix">
                                     <span class="component-title">Trakt Username</span>
                                     <input type="text" name="trakt_username" id="trakt_username" value="$sickbeard.TRAKT_USERNAME" size="35" />
@@ -900,6 +908,7 @@
                                     <span class="component-desc">Get your key at: <a href="http://trakt.tv/settings/api" rel="noreferrer" onclick="window.open('${sickbeard.ANON_REDIRECT}' + this.href, '_blank'); return false;">http://trakt.tv/settings/api</a></span>
                                 </label>
                             </div>
+
                             <div class="testNotification" id="testTrakt-result">Click below to test.</div>
                             <input type="button" class="btn" value="Test Trakt" id="testTrakt" />
                             <input type="submit" class="btn config_submitter" value="Save Changes" />

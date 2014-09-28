@@ -115,8 +115,8 @@ class ShowQueue(generic_queue.GenericQueue):
 
         return queueItemObj
 
-    def addShow(self, tvdb_id, showDir, default_status=None, quality=None, flatten_folders=None, lang="en"):
-        queueItemObj = QueueItemAdd(tvdb_id, showDir, default_status, quality, flatten_folders, lang)
+    def addShow(self, tvdb_id, showDir, default_status=None, quality=None, flatten_folders=None, lang="en", stay_ahead=0):
+        queueItemObj = QueueItemAdd(tvdb_id, showDir, default_status, quality, flatten_folders, lang, stay_ahead)
 
         self.add_item(queueItemObj)
 
@@ -167,7 +167,7 @@ class ShowQueueItem(generic_queue.QueueItem):
 
 
 class QueueItemAdd(ShowQueueItem):
-    def __init__(self, tvdb_id, showDir, default_status, quality, flatten_folders, lang):
+    def __init__(self, tvdb_id, showDir, default_status, quality, flatten_folders, lang, stay_ahead):
 
         self.tvdb_id = tvdb_id
         self.showDir = showDir
@@ -175,6 +175,7 @@ class QueueItemAdd(ShowQueueItem):
         self.quality = quality
         self.flatten_folders = flatten_folders
         self.lang = lang
+        self.stay_ahead = stay_ahead
 
         self.show = None
 
@@ -251,6 +252,7 @@ class QueueItemAdd(ShowQueueItem):
             self.show.location = self.showDir
             self.show.quality = self.quality if self.quality else sickbeard.QUALITY_DEFAULT
             self.show.flatten_folders = self.flatten_folders if self.flatten_folders != None else sickbeard.FLATTEN_FOLDERS_DEFAULT
+            self.show.stay_ahead = self.stay_ahead if self.stay_ahead != None else sickbeard.STAY_AHEAD_DEFAULT
             self.show.paused = 0
 
             # be smartish about this

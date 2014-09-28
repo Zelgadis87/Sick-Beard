@@ -637,7 +637,7 @@ class ConfigGeneral:
         sickbeard.save_config()
 
     @cherrypy.expose
-    def saveAddShowDefaults(self, defaultFlattenFolders, defaultStatus, anyQualities, bestQualities):
+    def saveAddShowDefaults(self, defaultFlattenFolders, defaultStatus, anyQualities, bestQualities, defaultStayAhead):
 
         if anyQualities:
             anyQualities = anyQualities.split(',')
@@ -655,6 +655,7 @@ class ConfigGeneral:
         sickbeard.QUALITY_DEFAULT = int(newQuality)
 
         sickbeard.FLATTEN_FOLDERS_DEFAULT = config.checkbox_to_value(defaultFlattenFolders)
+        sickbeard.STAY_AHEAD_DEFAULT = int(defaultStayAhead)
 
     @cherrypy.expose
     def generateKey(self):
@@ -1236,7 +1237,7 @@ class ConfigNotifications:
                           use_libnotify=None, libnotify_notify_onsnatch=None, libnotify_notify_ondownload=None,
                           use_nmj=None, nmj_host=None, nmj_database=None, nmj_mount=None, use_synoindex=None,
                           use_nmjv2=None, nmjv2_host=None, nmjv2_dbloc=None, nmjv2_database=None,
-                          use_trakt=None, trakt_username=None, trakt_password=None, trakt_api=None,
+                          use_trakt=None, use_trakt_sync=None, trakt_username=None, trakt_password=None, trakt_api=None,
                           use_pytivo=None, pytivo_notify_onsnatch=None, pytivo_notify_ondownload=None, pytivo_update_library=None,
                           pytivo_host=None, pytivo_share_name=None, pytivo_tivo_name=None,
                           use_nma=None, nma_notify_onsnatch=None, nma_notify_ondownload=None, nma_api=None, nma_priority=0 ):
@@ -1322,6 +1323,7 @@ class ConfigNotifications:
         sickbeard.TWITTER_NOTIFY_ONDOWNLOAD = config.checkbox_to_value(twitter_notify_ondownload)
 
         sickbeard.USE_TRAKT = config.checkbox_to_value(use_trakt)
+        sickbeard.USE_TRAKT_SYNC = config.checkbox_to_value(use_trakt_sync)
         sickbeard.TRAKT_USERNAME = trakt_username
         sickbeard.TRAKT_PASSWORD = trakt_password
         sickbeard.TRAKT_API = trakt_api
@@ -1700,7 +1702,7 @@ class NewHomeAddShows:
     @cherrypy.expose
     def addNewShow(self, whichSeries=None, tvdbLang="en", rootDir=None, defaultStatus=None,
                    anyQualities=None, bestQualities=None, flatten_folders=None, fullShowPath=None,
-                   other_shows=None, skipShow=None):
+                   other_shows=None, skipShow=None, stayAhead=0):
         """
         Receive tvdb id, dir, and other options and create a show from them. If extra show dirs are
         provided then it forwards back to newShow, if not it goes to /home.
@@ -1777,7 +1779,7 @@ class NewHomeAddShows:
         newQuality = Quality.combineQualities(map(int, anyQualities), map(int, bestQualities))
 
         # add the show
-        sickbeard.showQueueScheduler.action.addShow(tvdb_id, show_dir, int(defaultStatus), newQuality, flatten_folders, tvdbLang)  # @UndefinedVariable
+        sickbeard.showQueueScheduler.action.addShow(tvdb_id, show_dir, int(defaultStatus), newQuality, flatten_folders, tvdbLang, stayAhead)  # @UndefinedVariable
         ui.notifications.message('Show added', 'Adding the specified show into ' + show_dir)
 
         return finishAddShow()
@@ -1843,7 +1845,7 @@ class NewHomeAddShows:
             show_dir, tvdb_id, show_name = cur_show
 
             # add the show
-            sickbeard.showQueueScheduler.action.addShow(tvdb_id, show_dir, SKIPPED, sickbeard.QUALITY_DEFAULT, sickbeard.FLATTEN_FOLDERS_DEFAULT)  # @UndefinedVariable
+            sickbeard.showQueueScheduler.action.addShow(tvdb_id, show_dir, SKIPPED, sickbeard.QUALITY_DEFAULT, sickbeard.FLATTEN_FOLDERS_DEFAULT, sickbeard.STAY_AHEAD_DEFAULT)  # @UndefinedVariable
             num_added += 1
 
         if num_added:
@@ -2236,7 +2238,7 @@ class Home:
         )
 
         sqlResults = myDB.select(
-            "SELECT * FROM tv_episodes WHERE showid = ? ORDER BY season DESC, episode DESC",
+            "SELECT ep.*, trakt.showid next FROM tv_episodes ep LEFT JOIN trakt_data trakt ON (trakt.showid = ep.showid AND trakt.next_season = ep.season AND trakt.next_episode = ep.episode) WHERE ep.showid = ? ORDER BY ep.season DESC, ep.episode DESC",
             [showObj.tvdbid]
         )
 
@@ -2315,7 +2317,7 @@ class Home:
         return result['description'] if result else 'Episode not found.'
 
     @cherrypy.expose
-    def editShow(self, show=None, location=None, anyQualities=[], bestQualities=[], flatten_folders=None, auto_download=None, paused=None, directCall=False, air_by_date=None, tvdbLang=None):
+    def editShow(self, show=None, location=None, anyQualities=[], bestQualities=[], flatten_folders=None, stay_ahead=None, paused=None, directCall=False, air_by_date=None, tvdbLang=None):
 
         if show == None:
             errString = "Invalid show ID: " + str(show)
@@ -2345,7 +2347,7 @@ class Home:
         flatten_folders = config.checkbox_to_value(flatten_folders)
         logger.log(u"flatten folders: "+str(flatten_folders))
 
-        auto_download = config.checkbox_to_value(auto_download)
+        stay_ahead = config.to_int(stay_ahead, default=0)
         paused = config.checkbox_to_value(paused)
         air_by_date = config.checkbox_to_value(air_by_date)
 
@@ -2379,7 +2381,7 @@ class Home:
                 except exceptions.CantRefreshException, e:
                     errors.append("Unable to refresh this show: " + ex(e))
 
-            showObj.auto_download = auto_download
+            showObj.stay_ahead = stay_ahead
             showObj.paused = paused
             showObj.air_by_date = air_by_date
             showObj.lang = tvdb_lang

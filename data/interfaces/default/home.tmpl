@@ -17,6 +17,7 @@
 #set $today = str($datetime.date.today().toordinal())
 #set $downloadedEps = $myDB.select("SELECT showid, COUNT(*), (SELECT date FROM history h WHERE tv.showid = h.showid AND action IN ("+",".join([str(x) for x in ($Quality.DOWNLOADED + $Quality.SNATCHED + $Quality.SNATCHED_PROPER)])+") ORDER BY date DESC LIMIT 1) FROM tv_episodes tv WHERE (status IN ("+",".join([str(x) for x in $Quality.DOWNLOADED + [$ARCHIVED]])+") OR (status IN ("+",".join([str(x) for x in $Quality.SNATCHED + $Quality.SNATCHED_PROPER])+") AND location != '')) AND season != 0 and episode != 0 AND airdate <= "+$today+" GROUP BY showid")
 #set $allEps = $myDB.select("SELECT showid, COUNT(*) FROM tv_episodes WHERE season != 0 and episode != 0 AND (airdate != 1 OR status IN ("+",".join([str(x) for x in ($Quality.DOWNLOADED + $Quality.SNATCHED + $Quality.SNATCHED_PROPER) + [$ARCHIVED]])+")) AND airdate <= "+$today+" AND status != "+str($IGNORED)+" GROUP BY showid")
+#set $lastWatchedEps = $myDB.select("SELECT showid, MAX(last_watched) FROM tv_episodes GROUP BY showid")
 
 <script type="text/javascript" charset="utf-8">
 <!--
@@ -114,6 +115,7 @@
     <tr>
         <th class="nowrap">Next Ep</th>
 		<th class="nowrap">Last Snatched</th>
+		<th class="nowrap">Last Watched</th>
         <th>Show</th>
         <th>Network</th>
         <th>Quality</th>
@@ -126,7 +128,7 @@
   <tfoot>
     <tr>
       <th rowspan="1" colspan="1" align="center" style="background:transparent"><a href="$sbRoot/home/addShows/">Add Show</a></th>
-      <th rowspan="1" colspan="7" style="background:transparent"></th>
+      <th rowspan="1" colspan="8" style="background:transparent"></th>
     </tr>
   </tfoot>
   <tbody>
@@ -139,20 +141,13 @@
 
   <tr>
     <td align="center">(loading)</td>
-    <td>
+    <td colspan="#if $sickbeard.HIDE_TVSHOW_STATUS then 7 else 9#">
     #if $curLoadingShow.show == None:
     Loading... ($curLoadingShow.show_name)
     #else:
     <a href="displayShow?show=$curLoadingShow.show.tvdbid">$curLoadingShow.show.name</a>
     #end if
     </td>
-	<td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#"></td>
-    <td></td>
-    <td style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#"></td>
   </tr>
 #end for
 
@@ -165,6 +160,8 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
 #set $curShowDownloads = [x[1] for x in $downloadedEps if int(x[0]) == $curShow.tvdbid]
 #set $curShowLastSnatched = [x[2] for x in $downloadedEps if int(x[0]) == $curShow.tvdbid]
 #set $curShowAll = [x[1] for x in $allEps if int(x[0]) == $curShow.tvdbid]
+#set $curShowLastWatched = [x[1] for x in $lastWatchedEps if int(x[0]) == $curShow.tvdbid]
+
 #set $lastSnatched = ""
 #if len($curShowAll) != 0:
   #if len($curShowDownloads) != 0:
@@ -177,6 +174,12 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
     #set $nom = 0
     #set $den = $curShowAll[0]
   #end if
+
+  #if len($curShowLastWatched) == 1 and $curShowLastWatched[0] != None:
+    #set $curShowLastWatched = datetime.datetime.fromtimestamp($curShowLastWatched[0])
+  #else
+    #set $curShowLastWatched = ""
+  #end if
 #else
   #set $dlStat = "?"
   #set $nom = 0
@@ -186,6 +189,7 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
   <tr>
     <td align="center" class="nowrap">#if len($curEp) != 0 then $curEp[0].airdate else ""#</td>
 	<td align="center" class="nowrap">$lastSnatched</td>
+	<td align="center" class="nowrap">$curShowLastWatched</td>
     <td class="tvShow"><a href="$sbRoot/home/displayShow?show=$curShow.tvdbid">$curShow.name</a></td>
     <td>$curShow.network</td>
 #if $curShow.quality in $qualityPresets:
@@ -211,31 +215,23 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
             #set $nextEps = $curShow.getQueuedEpisodes(2)
             #if $curShow.status != "Ended" or $sickbeard.HIDE_TVSHOW_STATUS:
                 <tr>
-                    <td colspan="2" style="border-style:none">New episodes will be marked as:</td>
+                    <td colspan="2" style="border-style:none">Autodownloading:</td>
                     <td style="width:100px;text-align:right;border-style:none">
                         #if $curShow.paused:
                             -- paused --
-                        #else if $curShow.auto_download:
-                            #if len($nextEps) > 0:
-                                <a style="color:red" href="$sbRoot/home/editShow?show=$curShow.tvdbid" title="Show is set to auto download new episodes; however, there are still episodes that are not yet downloaded.">$statusStrings[$WANTED]</a>
-                            #else:
-                                <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">$statusStrings[$WANTED]</a>
-                            #end if
+                        #else if $curShow.stay_ahead > 0:
+                            <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">$curShow.stay_ahead ahead</a>
                         #else:
-                            #if len($nextEps) == 0:
-                                <a style="color:orange" href="$sbRoot/home/editShow?show=$curShow.tvdbid" title="Show is set to not auto download new episodes; however, there are no episodes left to be downloaded."' else '' #>$statusStrings[$WAITING]</a>
-                            #else:
-                               <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">$statusStrings[$WAITING]</a>
-                            #end if
+                            <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">None</a>
                         #end if
                     </td>
                 </tr>
             #end if
             #for $next in $nextEps:
-            <tr>
+            <tr style="font-weight: #if $next.nextEpisodeToWatch then 'bold' else ''#">
                 <td style="width:50px;border-style:none">${next.season}x${next.episode}</td>
                 <td style="text-align:center;border-style:none">$next.name</td>
-                <td style="width:100px;text-align:right;border-style:none">
+                <td style="width:100px;text-align:right;border-style:none;">
                     #if not $curShow.paused:
                         #if $next.status == 8:
                             <a href="$sbRoot/home/setStatus?show=${curShow.tvdbid}&eps=${next.season}x${next.episode}&status=${WANTED}" class="link-set-wanted" title="Click to download this episode">$statusStrings[$WAITING]</a>
