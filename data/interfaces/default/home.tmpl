@@ -141,21 +141,13 @@
 
   <tr>
     <td align="center">(loading)</td>
-    <td>
+    <td colspan="#if $sickbeard.HIDE_TVSHOW_STATUS then 7 else 9#">
     #if $curLoadingShow.show == None:
     Loading... ($curLoadingShow.show_name)
     #else:
     <a href="displayShow?show=$curLoadingShow.show.tvdbid">$curLoadingShow.show.name</a>
     #end if
     </td>
-	<td></td>
-	<td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#"></td>
-    <td></td>
-    <td style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#"></td>
   </tr>
 #end for
 
