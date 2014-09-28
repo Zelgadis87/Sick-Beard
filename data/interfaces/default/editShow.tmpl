@@ -66,7 +66,7 @@ This <b>DOES NOT</b> allow Sick Beard to download non-english TV episodes!<br />
 <br />
 <br />
 Flatten files (no folders): <input type="checkbox" name="flatten_folders" #if $show.flatten_folders == 1 and not $sickbeard.NAMING_FORCE_FOLDERS then "checked=\"checked\"" else ""# #if $sickbeard.NAMING_FORCE_FOLDERS then "disabled=\"disabled\"" else ""#/><br /><br />
-Auto Download New Episodes: <input type="number" min="0" name="stay_ahead" /><br /><br />
+Auto Download New Episodes: <input type="number" min="0" name="stay_ahead" value="$show.stay_ahead" /><br /><br />
 Paused: <input type="checkbox" name="paused" #if $show.paused == 1 then "checked=\"checked\"" else ""# /><br /><br />
 
 Air by date:
