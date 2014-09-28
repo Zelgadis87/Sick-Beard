@@ -454,3 +454,10 @@ class TraktSync(AddLastUpdateTVDB):
     def execute(self):
         self.connection.action("CREATE TABLE trakt_data (showid INTEGER PRIMARY KEY, next_season INTEGER, next_episode INTEGER, last_updated INTEGER);")
         self.connection.action("ALTER TABLE tv_episodes ADD COLUMN last_watched INTEGER;")
+
+class AddedDate(TraktSync):
+    def test(self):
+        return self.hasColumn("tv_shows", "added_date")
+
+    def execute(self):
+        self.connection.action("ALTER TABLE tv_shows ADD COLUMN added_date INTEGER DEFAULT 0")

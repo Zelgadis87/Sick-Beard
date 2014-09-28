@@ -74,21 +74,22 @@
 \$(document).ready(function(){
 
     \$("#showListTable:has(tbody tr)").tablesorter({
-        sortList: [[6,1],[2,0]],
+        sortList: [[4,1],[2,0]],
         textExtraction: {
-            5: function(node) { return \$(node).find("span").text().toLowerCase(); },
-            6: function(node) { return \$(node).find("span").text(); },
-            7: function(node) { return \$(node).find("img").attr("alt"); }
+            6: function(node) { return \$(node).find("span").text().toLowerCase(); },
+            7: function(node) { return \$(node).find("span").text(); },
+            8: function(node) { return \$(node).find("img").attr("alt"); }
         },
         widgets: ['saveSort', 'zebra', 'stickyHeaders'],
         headers: {
             0: { sorter: 'isoDate' },
 			1: { sorter: 'isoDate' },
 			2: { sorter: 'isoDate' },
-            3: { sorter: 'loadingNames' },
-            5: { sorter: 'quality' },
-            6: { sorter: 'eps' },
-            8: { sorter: false }
+			3: { sorter: 'isoDate' },
+            4: { sorter: 'loadingNames' },
+            6: { sorter: 'quality' },
+            7: { sorter: 'eps' },
+            9: { sorter: false }
         },
         sortStable: true
     });
@@ -117,6 +118,7 @@
         <th class="nowrap">Next Ep</th>
 		<th class="nowrap">Last Snatched</th>
 		<th class="nowrap">Last Watched</th>
+		<th>Added</th>
         <th>Show</th>
         <th>Network</th>
         <th>Quality</th>
@@ -129,7 +131,7 @@
   <tfoot>
     <tr>
       <th rowspan="1" colspan="1" align="center" style="background:transparent"><a href="$sbRoot/home/addShows/">Add Show</a></th>
-      <th rowspan="1" colspan="8" style="background:transparent"></th>
+      <th rowspan="1" colspan="10" style="background:transparent"></th>
     </tr>
   </tfoot>
   <tbody>
@@ -142,7 +144,7 @@
 
   <tr>
     <td align="center">(loading)</td>
-    <td colspan="#if $sickbeard.HIDE_TVSHOW_STATUS then 7 else 9#">
+    <td colspan="#if $sickbeard.HIDE_TVSHOW_STATUS then 8 else 10#">
     #if $curLoadingShow.show == None:
     Loading... ($curLoadingShow.show_name)
     #else:
@@ -191,6 +193,7 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
     <td align="center" class="nowrap">#if len($curEp) != 0 then $curEp[0].airdate else ""#</td>
 	<td align="center" class="nowrap">$lastSnatched</td>
 	<td align="center" class="nowrap">$curShowLastWatched</td>
+	<td align="center" class="nowrap"><%=datetime.datetime.fromtimestamp(curShow.added_date) if curShow.added_date > 0 else ''%></td>
     <td class="tvShow"><a href="$sbRoot/home/displayShow?show=$curShow.tvdbid">$curShow.name</a></td>
     <td>$curShow.network</td>
 #if $curShow.quality in $qualityPresets:

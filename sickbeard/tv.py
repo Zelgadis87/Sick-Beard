@@ -70,6 +70,7 @@ class TVShow(object):
         self.air_by_date = 0
         self.lang = lang
         self.last_update_tvdb = 1
+        self.added_date = 0
 
         self.lock = threading.Lock()
         self._isDirGood = False
@@ -646,6 +647,7 @@ class TVShow(object):
             self.flatten_folders = int(sqlResults[0]["flatten_folders"])
             self.paused = int(sqlResults[0]["paused"])
             self.stay_ahead = int(sqlResults[0]["stay_ahead"])
+            self.added_date = int(sqlResults[0]['added_date'])
 
             self._location = sqlResults[0]["location"]
 
