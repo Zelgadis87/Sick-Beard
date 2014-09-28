@@ -382,7 +382,7 @@ __INITIALIZED__ = False
 
 def get_backlog_cycle_time():
     cycletime = SEARCH_FREQUENCY * 2 + 7
-    return max([cycletime, 720])
+    return min([cycletime, 720])
 
 
 def initialize(consoleLogging=True):
