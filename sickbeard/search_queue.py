@@ -169,8 +169,6 @@ class RSSSearchQueueItem(generic_queue.QueueItem):
                     ep.status = common.IGNORED
                 elif show.paused:
                     ep.status = common.WAITING
-                #elif show.auto_download:
-                #    ep.status = common.WANTED
                 else:
                     ep.status = common.WAITING
                 ep.saveToDB()

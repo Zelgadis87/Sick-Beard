@@ -891,9 +891,6 @@ class TVShow(object):
             if epStatus == WANTED:
                 logger.log(u"Ep is WANTED, definitely get it", logger.DEBUG)
                 return True
-            # elif epStatus == UNAIRED and self.auto_download == 1:
-            #    logger.log(u"Ep is UNAIRED but the TvShow is in auto download mode so we are getting it", logger.DEBUG)
-            #    return True
             elif manualSearch:
                 logger.log(u"Usually I would ignore this ep but because you forced the search I'm overriding the default and allowing the quality", logger.DEBUG)
                 return True
@@ -1228,8 +1225,6 @@ class TVEpisode(object):
                     # If the episode is UNAIRED and the airdate has passed, OR the episode is new:
                     if self.show.paused:
                         self.status = IGNORED
-                    #elif self.show.auto_download:
-                    #    self.status = WANTED
                     else:
                         self.status = WAITING
 
