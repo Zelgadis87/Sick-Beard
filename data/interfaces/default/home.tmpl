@@ -104,12 +104,134 @@
         return false;
     });
 
+    var Indicator = function(dataKey, textTemplate, args) {
+        if (dataKey == null || textTemplate == null) throw "Arguments missing";
+
+        var key = dataKey;
+        var textTemplate = textTemplate;
+
+        var thresholds = [];
+        var threshold_default = "hidden";
+        var isActive = function(data){ return true; };
+        var computeValue = function(value, data) { return value; };
+        var formatValue = function(value, data) { return value; };
+
+        if (args) {
+            if (args.thresholds && jQuery.isArray(args.thresholds)) {
+                for(var i=0; i < args.thresholds.length; i++) {
+                    if (args.thresholds[i].check && args.thresholds[i].value) thresholds.push(args.thresholds[i]);
+                }
+            }
+
+            if (args.threshold_default) threshold_default = args.threshold_default;
+            if (args.isActive && jQuery.isFunction(args.isActive)) isActive = args.isActive;
+            if (args.computeValue && jQuery.isFunction(args.computeValue)) computeValue = args.computeValue;
+            if (args.formatValue && jQuery.isFunction(args.formatValue)) formatValue = args.formatValue;
+        }
+
+        var computeThreshold = function(value) {
+            var ret = threshold_default;
+            var found = false;
+            for (var i=0; i < thresholds.length && !found; i++) {
+                if ( eval(value + thresholds[i].check) ) {
+                    ret = thresholds[i].value;
+                    found = true;
+                }
+            }
+            return ret;
+        };
+
+        var insert = function(el, text, cls) {
+            jQuery('<div />', {"class": cls, "text": text}).appendTo( el );
+        };
+
+        var me = {
+            apply : function(el, data) {
+                if (el == null) return;
+                el = jQuery(el);
+
+                if (data == null) return;
+
+                var value = data[dataKey];
+                if (value == null) return;
+
+                if (!isActive(data)) return;
+
+                var text = textTemplate.replace( '{}', formatValue(value, data) );
+                var cls = computeThreshold( computeValue(value, data) );
+
+                insert(el, text, cls);
+            }
+        };
+
+        Indicator.prototype.all = Indicator.prototype.all || [];
+        Indicator.prototype.all.push(me);
+
+        return me;
+    };
+
+    var Thresholds = (function() {
+
+        var Threshold = function(check, cls) {
+            return {check: check, value: cls}
+        };
+
+        return {
+            // Unary
+            "true": function(cls) { return new Threshold('==true', cls); },
+            "false": function(cls) { return new Threshold('==false', cls); },
+            "null": function(cls) { return new Threshold('==null', cls); },
+
+            // Binary
+            "eq": function(v, cls) { return new Threshold('==' + v, cls); },
+            "lt": function(v, cls) { return new Threshold(' <' + v, cls); },
+            "gt": function(v, cls) { return new Threshold(' >' + v, cls); },
+            "le": function(v, cls) { return new Threshold('<=' + v, cls); },
+            "ge": function(v, cls) { return new Threshold('>=' + v, cls); }
+
+        };
+
+    })();
+
+    new Indicator("episode", "New Show!", { threshold_default: 'success', isActive: function(data){ return data.season == 1 && data.episode == 1; }});
+    new Indicator("paused", "This show is paused", { threshold_default : "error", isActive: function(data) { return data.paused; }});
+    new Indicator("stay_ahead", "Autodownloading disabled", { threshold_default : "error", isActive: function(data) { return !data.paused && data.stay_ahead == 0; }});
+    new Indicator("queued", "Currently searching for {} episodes", { thresholds : [Thresholds.gt(1, "error"), Thresholds.gt(0, "warning")] });
+    new Indicator("snatched", "Currently downloading {} episodes", { thresholds : [Thresholds.gt(0, "success")] });
+    new Indicator("stay_ahead", "{} episodes ready to be watched",
+        {
+            isActive: function(data) { return !data.paused && data.stay_ahead > 0 && data.to_watch > 0; },
+            thresholds: [Thresholds.eq(0, "error bold"), Thresholds.ge(1, "success"), Thresholds.gt(0, "light_success")],
+            computeValue: function(value, data) { return data.downloaded / Math.min(data.to_watch, data.stay_ahead); },
+            formatValue: function(value, data) { return data.downloaded + " / " + Math.min(data.to_watch, data.stay_ahead); }
+        }
+    );
+    new Indicator("safe_delete", "{} episodes ready to be archived", { thresholds : [Thresholds.ge(20, "error bold"), Thresholds.ge(10, "error"), Thresholds.ge(5, "warning")] });
+
+    jQuery('[data-show]').each(function() {
+        var data = jQuery(this).data("show");
+
+        for(var i = 0; i < Indicator.prototype.all.length; i++) {
+            Indicator.prototype.all[i].apply( this, data );
+        }
+    });
+
     // Refresh the page every now and again.
     setTimeout(function(){ location.reload(); }, 5 * 60 * 1000);
 
 });
 //-->
 </script>
+
+<style type="text/css">
+    .bold { font-weight: bold; }
+    .success { color: green; }
+    .light_success { color: rgb(122, 161, 41) }
+    .warning { color: orange; }
+    .error { color: red; }
+    .hidden { display: none; }
+</style>
+
 
 <table id="showListTable" class="tablesorter" cellspacing="1" border="0" cellpadding="0">
 
@@ -171,7 +293,7 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
     #set $dlStat = str($curShowDownloads[0])+" / "+str($curShowAll[0])
     #set $nom = $curShowDownloads[0]
     #set $den = $curShowAll[0]
-	#set $lastSnatched = "" if $curShowLastSnatched[0] == None else datetime.datetime.strptime(str($curShowLastSnatched[0]), $history.dateFormat)
+  #set $lastSnatched = "" if $curShowLastSnatched[0] == None else datetime.datetime.strptime(str($curShowLastSnatched[0]), $history.dateFormat)
   #else
     #set $dlStat = "0 / "+str($curShowAll[0])
     #set $nom = 0
@@ -215,38 +337,7 @@ $myShowList.sort(lambda x, y: cmp(x.name, y.name))
     </td>
     <td align="center" style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#"><img src="$sbRoot/images/#if int($curShow.paused) == 0 and $curShow.status != "Ended" then "yes16.png\" alt=\"Y\"" else "no16.png\" alt=\"N\""# width="16" height="16" /></td>
     <td align="center">
-        <table style="width:90%;padding:0 5%">
-            #set $nextEps = $curShow.getQueuedEpisodes(2)
-            #if $curShow.status != "Ended" or $sickbeard.HIDE_TVSHOW_STATUS:
-                <tr>
-                    <td colspan="2" style="border-style:none">Autodownloading:</td>
-                    <td style="width:100px;text-align:right;border-style:none">
-                        #if $curShow.paused:
-                            -- paused --
-                        #else if $curShow.stay_ahead > 0:
-                            <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">$curShow.stay_ahead ahead</a>
-                        #else:
-                            <a href="$sbRoot/home/editShow?show=$curShow.tvdbid">None</a>
-                        #end if
-                    </td>
-                </tr>
-            #end if
-            #for $next in $nextEps:
-            <tr style="font-weight: #if $next.nextEpisodeToWatch then 'bold' else ''#">
-                <td style="width:50px;border-style:none">${next.season}x${next.episode}</td>
-                <td style="text-align:center;border-style:none">$next.name</td>
-                <td style="width:100px;text-align:right;border-style:none;">
-                    #if not $curShow.paused:
-                        #if $next.status == 8:
-                            <a href="$sbRoot/home/setStatus?show=${curShow.tvdbid}&eps=${next.season}x${next.episode}&status=${WANTED}" class="link-set-wanted" title="Click to download this episode">$statusStrings[$WAITING]</a>
-                        #else:
-                            <a href="$sbRoot/home/displayShow?show=${curShow.tvdbid}#season-${next.season}">$simpleStatusStrings[$next.status]</a>
-                        #end if
-                    #end if
-                </td>
-            </tr>
-        #end for
-        </table>
+        <div data-show='${$curShow.getJsonData()}'></div>
     </td>
     <td align="center" style="display:#if not $sickbeard.HIDE_TVSHOW_STATUS then 'table-cell' else 'none'#">#if not $sickbeard.HIDE_TVSHOW_STATUS then $curShow.status else ''#</td>
   </tr>

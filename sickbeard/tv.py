@@ -44,7 +44,9 @@ from sickbeard import encodingKludge as ek
 from common import Quality, Overview
 from common import DOWNLOADED, SNATCHED, SNATCHED_PROPER, ARCHIVED, IGNORED, UNAIRED, WANTED, SKIPPED, UNKNOWN, WAITING
 from common import NAMING_DUPLICATE, NAMING_EXTEND, NAMING_LIMITED_EXTEND, NAMING_SEPARATED_REPEAT, NAMING_LIMITED_EXTEND_E_PREFIXED
+from sickbeard.common import WAITING
 
+import json
 
 class TVShow(object):
 
@@ -724,6 +726,31 @@ class TVShow(object):
                 curEp.nextEpisodeToWatch = sqlEp["next"]
                 foundEps.append(curEp)
         return foundEps
+
+    def getJsonData(self):
+        myDB = db.DBConnection()
+        query = ("select last_watched, season, episode, "
+            "    (select count(*) from tv_episodes where showid = sv.tvdb_id and status != " + str(UNAIRED) + " and ((season > ep.season) or (season = ep.season and ((ep.last_watched is null and episode >= ep.episode) or episode > ep.episode)))) as 'to_watch', "
+            "    (select count(*) from tv_episodes where showid = sv.tvdb_id and status = " + str(WANTED) + " and ((season > ep.season) or (season = ep.season and ((ep.last_watched is null and episode >= ep.episode) or episode > ep.episode)))) as 'queued', "
+            "    (select count(*) from tv_episodes where showid = sv.tvdb_id and status in (" + ",".join([str(q) for q in Quality.SNATCHED]) + ") and ((season > ep.season) or (season = ep.season and ((ep.last_watched is null and episode >= ep.episode) or episode > ep.episode)))) as 'snatched', "
+            "    (select count(*) from tv_episodes where showid = sv.tvdb_id and status in (" + ",".join([str(q) for q in Quality.DOWNLOADED + [ARCHIVED]]) + ") and ((season > ep.season) or (season = ep.season and ((ep.last_watched is null and episode >= ep.episode) or episode > ep.episode)))) as 'downloaded', "
+            "    (select count(*) from tv_episodes where showid = sv.tvdb_id and status in (" + ",".join([str(q) for q in Quality.DOWNLOADED]) + ") and ((season < ep.season) or ((ep.last_watched is null and episode <= ep.episode) or episode < ep.episode))) as 'safe_delete' "
+            "from tv_shows sv, tv_episodes ep "
+            "where sv.tvdb_id = ? and ep.episode_id = coalesce( "
+            "    (select episode_id from tv_episodes where showid = sv.tvdb_id and last_watched is not null order by season desc, episode desc limit 1), "
+            "    (select episode_id from tv_episodes where showid = sv.tvdb_id and season=1 and episode=1) "
+            ")")
+
+        # logger.log("Query: " + query)
+        params = [self.tvdbid]
+        result = myDB.select( query, params )
+
+
+        data = {k:result[0][k] for k in result[0].keys()} if len(result) == 1 else {}
+        data["stay_ahead"] = self.stay_ahead
+        data["paused"] = self.paused
+
+        return json.dumps(data)
 
     def nextEpisode(self):
 
