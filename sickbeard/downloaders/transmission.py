@@ -56,7 +56,10 @@ def sendTORRENT(torrent):
         
     ###################################################################################################
     
-    host = urlparse(sickbeard.TORRENT_HOST)
+    host = sickbeard.TORRENT_HOST
+    if not host.startswith('http'):
+        host = 'http://' + sickbeard.TORRENT_HOST
+    host = urlparse(host)
     session = None
     if hasattr(torrent.provider, 'session'):
         session = torrent.provider.session
@@ -72,7 +75,16 @@ def sendTORRENT(torrent):
         ###################################################################################################
         
         try:
-            tc = transmissionrpc.Client(host.hostname, host.port, sickbeard.TORRENT_USERNAME, sickbeard.TORRENT_PASSWORD)
+            address = host.hostname
+            if host.scheme:
+                address = host.scheme + '://' + address
+            if host.port:
+                address += ':' + str(host.port)
+            if host.path in ['','/']:
+                address += '/transmission/rpc'
+            else:
+                address += host.path
+            tc = transmissionrpc.Client(address, host.port, sickbeard.TORRENT_USERNAME, sickbeard.TORRENT_PASSWORD)
             logger.log("[Transmission] Login With Transmission, Successful.", logger.DEBUG)
         except transmissionrpc.TransmissionError, e:
             logger.log("[Transmission] Login With Transmission, Failed.",logger.ERROR)
@@ -122,12 +134,23 @@ def sendTORRENT(torrent):
 def testAuthentication(host, username, password):
 
     try:
+        if not host.startswith('http'):
+            host = 'http://' + host
         host = urlparse(host)
     except Exception, e:
         return False, u"[Transmission] Host properties are not filled in correctly."
 
     try:
-        tc = transmissionrpc.Client(host.hostname, host.port, sickbeard.TORRENT_USERNAME, sickbeard.TORRENT_PASSWORD)
+        address = host.hostname
+        if host.scheme:
+            address = host.scheme + '://' + address
+        if host.port:
+            address += ':' + str(host.port)
+        if host.path in ['','/']:
+            address += '/transmission/rpc'
+        else:
+            address += host.path
+        tc = transmissionrpc.Client(address, host.port, sickbeard.TORRENT_USERNAME, sickbeard.TORRENT_PASSWORD)
         return True, u"[Transmission] Success: Connected and Authenticated. RPC version: " + str(tc.rpc_version)
     except Exception, e:
        return False, u"[Transmission] testAuthentication() Error: " + ex(e)
