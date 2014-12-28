@@ -139,6 +139,7 @@ class TraktSync:
         response = self._sendToTrakt(method, None, None, None)
 
         if response != False:
+            changes = dict();
             myDB = db.DBConnection()
 
             for data in response:
@@ -153,9 +154,21 @@ class TraktSync:
 
                     cursor = myDB.action("UPDATE tv_episodes SET last_watched=? WHERE showid=? AND season=? AND episode=? AND (last_watched IS NULL OR last_watched < ?)", [watched, show_id, season, episode, watched])
                     if cursor.rowcount > 0:
-                        logger.log(str(cursor.rowcount) + " episodes of " + show_name + " marked as watched.")
+                        changes[show_name] = changes.get(show_name, 0) + 1
 
-            logger.log("Watched episodes synchronization complete.")
+            message = "Watched episodes synchronization complete: ";
+            if (len(changes) == 0):
+                message += "No changes detected."
+            else:
+                message += "Marked as watched "
+                first = True;
+                for show_name in changes:
+                    if (first):
+                        message += ", "
+                        first = False;
+                    message += str(changes[show_name]) + " episodes of " + show_name + ""
+
+            logger.log(message)
         else:
             logger.log("Watched episodes synchronization failed.")
 
