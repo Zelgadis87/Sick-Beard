@@ -45,9 +45,9 @@ import urllib2
 def _downloadResult(result):
     """
     Downloads a result to the appropriate black hole folder.
-    
+
     Returns a bool representing success.
-    
+
     result: SearchResult instance to download.
     """
 
@@ -63,9 +63,9 @@ def _downloadResult(result):
     if result.resultType == "nzb":
         newResult = resProvider.downloadResult(result)
 
-    # if it's an nzb data result 
+    # if it's an nzb data result
     elif result.resultType == "nzbdata":
-        
+
         # get the final file path to the nzb
         fileName = ek.ek(os.path.join, sickbeard.NZB_DIR, result.name + ".nzb")
 
@@ -98,9 +98,9 @@ def snatchEpisode(result, endStatus=SNATCHED):
     """
     Contains the internal logic necessary to actually "snatch" a result that
     has been found.
-    
+
     Returns a bool representing success.
-    
+
     result: SearchResult instance to be snatched.
     endStatus: the episode status that should be used for the episode object once it's snatched.
     """
@@ -118,7 +118,7 @@ def snatchEpisode(result, endStatus=SNATCHED):
             dlResult = False
 
     elif result.resultType == "torrent":
-        
+
         #this is required for providers that use torrent cache (more than one possibility)
         #like Torrentz. Maybe convert result.url to an array in the future.
         if result.url.count(";") > 0:
@@ -129,11 +129,11 @@ def snatchEpisode(result, endStatus=SNATCHED):
                     result.url = url
                     break
                 except Exception:
-                    continue 
-            
+                    continue
+
         # torrents are always saved to disk
-        if sickbeard.TORRENT_METHOD == "blackhole": 
-            dlResult = [_downloadResult(result)]
+        if sickbeard.TORRENT_METHOD == "blackhole":
+            dlResult = _downloadResult(result)
        # torrents are sending to torrent client
         elif sickbeard.TORRENT_METHOD == "utorrent":
             dlResult = utorrent.sendTORRENT(result)
@@ -147,7 +147,7 @@ def snatchEpisode(result, endStatus=SNATCHED):
         logger.log(u"Unknown result type, unable to download it", logger.ERROR)
         dlResult = False
 
-    if dlResult == False or dlResult[0] == False:
+    if dlResult == False:
         return False
 
     ui.notifications.message('Episode snatched', result.name)
@@ -197,7 +197,7 @@ def searchForNeededEpisodes():
 
         # pick a single result for each episode, respecting existing results
         for curEp in curFoundResults:
-        
+
             if not curEp.status == WANTED:
                 logger.log(u"Episode " + curEp.prettyName() + " is not in the download queue. Ignoring all RSS items for it", logger.DEBUG)
 
@@ -238,11 +238,11 @@ def pickBestResult(results, quality_list=None):
     bestResult = None
     for cur_result in results:
         logger.log(u"Quality of " + cur_result.name + " is " + Quality.qualityStrings[cur_result.quality], logger.DEBUG)
-        
+
         if quality_list and cur_result.quality not in quality_list:
             logger.log(cur_result.name+" is a quality we know we don't want, rejecting it", logger.DEBUG)
             continue
-        
+
         if not bestResult or bestResult.quality < cur_result.quality and cur_result.quality != Quality.UNKNOWN:
             bestResult = cur_result
         elif bestResult.quality == cur_result.quality:
@@ -262,18 +262,18 @@ def pickBestResult(results, quality_list=None):
 def isFinalResult(result):
     """
     Checks if the given result is good enough quality that we can stop searching for other ones.
-    
+
     If the result is the highest quality in both the any/best quality lists then this function
     returns True, if not then it's False
 
     """
-    
+
     logger.log(u"Checking if we should keep searching after we've found "+result.name, logger.DEBUG)
-    
+
     show_obj = result.episodes[0].show
-    
+
     any_qualities, best_qualities = Quality.splitQuality(show_obj.quality)
-    
+
     # if there is a redownload that's higher than this then we definitely need to keep looking
     if best_qualities and result.quality < max(best_qualities):
         return False
@@ -281,13 +281,13 @@ def isFinalResult(result):
     # if there's no redownload that's higher (above) and this is the highest initial download then we're good
     elif any_qualities and result.quality == max(any_qualities):
         return True
-    
+
     elif best_qualities and result.quality == max(best_qualities):
-        
+
         # if this is the best redownload but we have a higher initial download then keep looking
         if any_qualities and result.quality < max(any_qualities):
             return False
-        
+
         # if this is the best redownload and we don't have a higher initial download then we're done
         else:
             return True
@@ -321,13 +321,13 @@ def findEpisode(episode, manualSearch=False):
             continue
 
         didSearch = True
-        
+
         # skip non-tv crap
         curFoundResults = filter(lambda x: show_name_helpers.filterBadReleases(x.name) and show_name_helpers.isGoodResult(x.name, episode.show), curFoundResults)
-        
+
         # ignore thepiretebay results
-        curFoundResults = filter(lambda x: "thepiratebay.org/" not in x.url, curFoundResults) 
-        
+        curFoundResults = filter(lambda x: "thepiratebay.org/" not in x.url, curFoundResults)
+
         # loop all results and see if any of them are good enough that we can stop searching
         done_searching = False
         for cur_result in curFoundResults:
@@ -335,7 +335,7 @@ def findEpisode(episode, manualSearch=False):
             logger.log(u"Should we stop searching after finding "+cur_result.name+": "+str(done_searching), logger.DEBUG)
             if done_searching:
                 break
-        
+
         foundResults += curFoundResults
 
         # if we did find a result that's good enough to stop then don't continue
@@ -446,10 +446,10 @@ def findSeason(show, season):
             logger.log(u"No eps from this season are wanted at this quality, ignoring the result of "+bestSeasonNZB.name, logger.DEBUG)
 
         else:
-            
+
             if bestSeasonNZB.provider.providerType == GenericProvider.NZB:
                 logger.log(u"Breaking apart the NZB and adding the individual ones to our results", logger.DEBUG)
-                
+
                 # if not, break it apart and add them as the lowest priority results
                 individualResults = nzbSplitter.splitResult(bestSeasonNZB)
 
@@ -468,7 +468,7 @@ def findSeason(show, season):
 
             # If this is a torrent all we can do is leech the entire torrent, user will have to select which eps not do download in his torrent client
             else:
-                
+
                 if allWanted:
                     # Season result from BTN must be a full-season torrent, creating multi-ep result for it.
                     logger.log(u"Adding multi-ep result for full-season torrent. Set the episodes you don't want to 'don't download' in your torrent client if desired!")
