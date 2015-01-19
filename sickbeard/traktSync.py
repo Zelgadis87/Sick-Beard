@@ -19,8 +19,10 @@
 
 import time
 import urllib2
+import threading
 
-from hashlib import sha1
+from lib import dateutil
+from lib.dateutil import parser
 
 try:
     import json
@@ -38,6 +40,13 @@ class TraktSync:
     A synchronizer for trakt.tv which keeps track of which episode has and hasn't been watched.
     """
 
+    def __init__(self):
+        self._auth_lock = threading.Condition();
+        self._auth_token = None;
+        self._auth_client = None;
+        self._auth_requesting = False;
+        self._trakt_api_url = "https://api.trakt.tv/";
+
     def _username(self):
         return sickbeard.TRAKT_USERNAME
 
@@ -50,7 +59,37 @@ class TraktSync:
     def _use_me(self):
         return sickbeard.USE_TRAKT and sickbeard.USE_TRAKT_SYNC
 
-    def _sendToTrakt(self, method, api, username, password, data = {}):
+    def requestToken(self):
+        """Invoked by a custom thread to acquire a valid trakt token, to use for
+        all the following requests"""
+        self._auth_lock.acquire();
+
+        data = {};
+        data["login"] = self._username();
+        data["password"] = self._password();
+
+        request_url = self._trakt_api_url + "auth/login";
+        request = urllib2.Request(request_url);
+        request.add_header("content-type", "application/json");
+        request.add_header("trakt-api-version", 2);
+        request.add_header("trakt-api-key", self._api());
+        request.add_header("trakt-user-login", self._username());
+
+        request.add_data(json.dumps(data));
+
+        try:
+            logger.log("trakt_sync: Authenticating ...", logger.DEBUG)
+            stream = urllib2.urlopen(request, timeout=120)
+
+            self._auth_token = json.loads(stream.read())["token"];
+        except (IOError), e:
+            logger.log("trakt_sync: Failed to authenticate: " + e.message, logger.ERROR)
+
+        self._auth_requesting = False
+        self._auth_lock.notify_all();
+        self._auth_lock.release();
+
+    def _sendToTrakt(self, method, api = None, username = None, password = None, data = None, requires_auth = False):
         """
         A generic method for communicating with trakt. Uses the method along
         with the auth info to send the command.
@@ -62,81 +101,52 @@ class TraktSync:
 
         Returns: The data retrieved, or false if the request failed.
         """
+
+        self._auth_lock.acquire();
+        while not self._auth_token:
+            logger.log("trakt_sync: Waiting on auth token", logger.DEBUG)
+            if not self._auth_requesting:
+                self._auth_requesting = True;
+                thread = threading.Thread(None, self.requestToken, "TraktAuthorizer");
+                thread.start();
+
+            self._auth_lock.wait();
+        self._auth_lock.release();
+
+
         logger.log("trakt_sync: Call method " + method, logger.DEBUG)
 
-        # if the API isn't given then use the config API
-        if not api:
-            api = self._api()
+        request_url = self._trakt_api_url + method;
+        request = urllib2.Request(request_url);
+        request.add_header("content-type", "application/json");
+        request.add_header("trakt-api-version", 2);
+        request.add_header("trakt-api-key", self._api());
+        request.add_header("trakt-user-token", self._auth_token);
+        request.add_header("trakt-user-login", self._username());
 
-        # if the username isn't given then use the config username
-        if not username:
-            username = self._username()
-
-        # if the password isn't given then use the config password
-        if not password:
-            password = self._password()
-        password = sha1(password).hexdigest()
-
-        # replace the API string with what we found
-        method = method.replace("%API%", api)
-
-        data["username"] = username
-        data["password"] = password
-
-        # take the URL params and make a json object out of them
-        encoded_data = json.dumps(data);
+        encoded_data = "";
+        if data:
+            encoded_data = json.dumps(data);
+            request.add_data(encoded_data);
 
         # request the URL from trakt and parse the result as json
         try:
             logger.log("trakt_sync: Calling method http://api.trakt.tv/" + method + ", with data" + encoded_data, logger.DEBUG)
-            stream = urllib2.urlopen("http://api.trakt.tv/" + method, encoded_data)
-            resp = stream.read()
-
-            resp = json.loads(resp)
+            stream = urllib2.urlopen(request, timeout = 60)
+            resp = json.loads(stream.read())
 
             if ("error" in resp):
                 raise Exception(resp["error"])
 
-        except (IOError):
-            logger.log("trakt_sync: Failed calling method", logger.ERROR)
+        except (IOError), e:
+            logger.log("trakt_sync: Failed calling method: " + e.message, logger.ERROR)
             return False
 
         return resp
 
-    def updateNextEpisodeData(self):
-        update_datetime = int(time.time())
-
-        method = "user/progress/watched.json/%API%/" + self._username() + "/"
-        response = self._sendToTrakt(method, None, None, None)
-
-        if response != False:
-            myDB = db.DBConnection()
-
-            nextSeason = 1
-            nextEpisode = 1
-
-            myDB.action("DELETE FROM trakt_data;")
-            for data in response:
-                show_id = data["show"]["tvdb_id"]
-                if data["next_episode"] == False:
-                    # the user has completed this serie.
-                    nextSeason = -1
-                    nextEpisode = -1
-                else:
-                    nextSeason = data["next_episode"]["season"]
-                    nextEpisode = data["next_episode"]["number"]
-
-                myDB.action("INSERT OR REPLACE INTO trakt_data(showid, next_season, next_episode, last_updated) VALUES(?, ?, ?, ?)", [show_id, nextSeason, nextEpisode, update_datetime])
-
-                logger.log("Show " + str(show_id) + " updated. NextEpisode: " + ("COMPLETE" if nextSeason == False else str(nextSeason) + "x" + str(nextEpisode)), logger.DEBUG)
-
-            logger.log("Next episodes synchronization complete.")
-        else:
-            logger.log("Next episodes synchronization failed.")
-
     def updateWatchedData(self):
-        method = "user/watched.json/%API%/" + self._username() + "/"
-        response = self._sendToTrakt(method, None, None, None)
+        method = "users/" + self._username() + "/history/episodes"
+        response = self._sendToTrakt(method)
 
         if response != False:
             changes = dict();
@@ -144,17 +154,16 @@ class TraktSync:
 
             for data in response:
 
-                if data["type"] == "episode":
-                    # We are only interested in tv episodes.
-                    show_name = data["show"]["title"]
-                    show_id = data["show"]["tvdb_id"]
-                    season = data["episode"]["season"]
-                    episode = data["episode"]["number"]
-                    watched = data["watched"]
+                show_name = data["show"]["title"]
+                show_id = data["show"]["ids"]["tvdb"]
+                season = data["episode"]["season"]
+                episode = data["episode"]["number"]
+                watched = time.mktime(parser.parse(data["watched_at"]).timetuple())
 
-                    cursor = myDB.action("UPDATE tv_episodes SET last_watched=? WHERE showid=? AND season=? AND episode=? AND (last_watched IS NULL OR last_watched < ?)", [watched, show_id, season, episode, watched])
-                    if cursor.rowcount > 0:
-                        changes[show_name] = changes.get(show_name, 0) + 1
+                cursor = myDB.action("UPDATE tv_episodes SET last_watched=? WHERE showid=? AND season=? AND episode=? AND (last_watched IS NULL OR last_watched < ?)", [watched, show_id, season, episode, watched])
+                if cursor.rowcount > 0:
+                    changes[show_name] = changes.get(show_name, 0) + 1
+                    logger.log("Updated " + show_name + ", episode " + str(season) + "x" + str(episode) + " watched @ " + str(watched))
 
             message = "Watched episodes synchronization complete: ";
             if (len(changes) == 0):
@@ -169,8 +178,32 @@ class TraktSync:
                     message += str(changes[show_name]) + " episodes of " + show_name + ""
 
             logger.log(message)
+
+            self.updateNextEpisodeData();
         else:
             logger.log("Watched episodes synchronization failed.")
+
+    def updateNextEpisodeData(self):
+
+        myDB = db.DBConnection()
+        myDB.action("DELETE FROM trakt_data;")
+
+        update_datetime = int(time.time())
+        showList = list(sickbeard.showList)
+
+        for show in showList:
+            sqlResults = myDB.select("SELECT season, episode FROM v_episodes_to_watch where showid = ? order by season asc, episode asc limit 1", [show.tvdbid]);
+            if len(sqlResults) == 1:
+                nextSeason = sqlResults[0]["season"];
+                nextEpisode = sqlResults[0]["episode"];
+            else:
+                nextSeason = -1;
+                nextEpisode = -1;
+
+            myDB.action("INSERT INTO trakt_data(showid, next_season, next_episode, last_updated) VALUES(?, ?, ?, ?)", [show.tvdbid, nextSeason, nextEpisode, update_datetime]);
+
+        logger.log("Next episodes synchronization complete.")
+        self.updateEpisodesToAutoDownload()
 
     def updateEpisodesToAutoDownload(self):
         myDB = db.DBConnection()
@@ -187,8 +220,7 @@ class TraktSync:
         if updatedShows:
             sickbeard.backlogSearchScheduler.action.searchBacklog(updatedShows)
 
-    def run(self):
-        self.updateNextEpisodeData()
-        self.updateWatchedData()
-        self.updateEpisodesToAutoDownload()
         logger.log("Synchronization complete.")
+
+    def run(self):
+        self.updateWatchedData()
