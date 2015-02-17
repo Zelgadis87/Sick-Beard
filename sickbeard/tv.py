@@ -865,7 +865,8 @@ class TVShow(object):
                         "startyear": self.startyear,
                         "tvr_name": self.tvrname,
                         "lang": self.lang,
-                        "last_update_tvdb": self.last_update_tvdb
+                        "last_update_tvdb": self.last_update_tvdb,
+                        "added_date": self.added_date
                         }
 
         myDB.upsert("tv_shows", newValueDict, controlValueDict)
