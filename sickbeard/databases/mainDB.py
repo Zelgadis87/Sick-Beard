@@ -454,6 +454,7 @@ class TraktSync(AddLastUpdateTVDB):
     def execute(self):
         self.connection.action("CREATE TABLE trakt_data (showid INTEGER PRIMARY KEY, next_season INTEGER, next_episode INTEGER, last_updated INTEGER);")
         self.connection.action("ALTER TABLE tv_episodes ADD COLUMN last_watched INTEGER;")
+        self.connection.action("CREATE view v_episodes_to_watch AS SELECT e1.showid, e1.season, e1.episode FROM tv_episodes e1 WHERE ( season = (SELECT season FROM tv_episodes e2 WHERE e2.showid = e1.showid AND e2.last_watched IS NOT NULL ORDER BY e2.season DESC, e2.episode DESC LIMIT 1) AND episode > (SELECT episode FROM tv_episodes e2 WHERE e2.showid = e1.showid AND e2.last_watched IS NOT NULL ORDER BY e2.season DESC, e2.episode DESC LIMIT 1) ) OR ( season > (SELECT season FROMtv_episodes e2 WHERE e2.showid = e1.showid AND e2.last_watched IS NOT NULLORDER BY e2.season DESC, e2.episode DESC LIMIT 1) ) OR ( e1.season > 0 AND 0 = (SELECT Count(*) FROM tv_episodes e2 WHERE e2.showid = e1.showid AND e2.last_watched IS NOT NULL) ) ORDER BY showid ASC, season ASC, episode ASC;")
 
 class AddedDate(TraktSync):
     def test(self):
