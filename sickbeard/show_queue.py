@@ -19,7 +19,7 @@
 from __future__ import with_statement
 
 import traceback
-import datetime
+import time
 
 import sickbeard
 
@@ -255,7 +255,7 @@ class QueueItemAdd(ShowQueueItem):
             self.show.flatten_folders = self.flatten_folders if self.flatten_folders != None else sickbeard.FLATTEN_FOLDERS_DEFAULT
             self.show.stay_ahead = self.stay_ahead if self.stay_ahead != None else sickbeard.STAY_AHEAD_DEFAULT
             self.show.paused = 0
-            self.show.added_date = datetime.datetime.now();
+            self.show.added_date = int(time.time())
 
             # be smartish about this
             if self.show.genre and "talk show" in self.show.genre.lower():
