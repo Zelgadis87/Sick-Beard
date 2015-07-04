@@ -33,6 +33,8 @@ import sickbeard
 
 from sickbeard import logger
 from sickbeard import db
+from sickbeard import ui
+
 from common import DOWNLOADED, SNATCHED, SNATCHED_PROPER, ARCHIVED, IGNORED, UNAIRED, WANTED, SKIPPED, UNKNOWN, WAITING
 
 class TraktSync:
@@ -84,6 +86,7 @@ class TraktSync:
             self._auth_token = json.loads(stream.read())["token"];
         except (IOError), e:
             logger.log("trakt_sync: Failed to authenticate: " + e.message, logger.ERROR)
+            time.sleep(5)
 
         self._auth_requesting = False
         self._auth_lock.notify_all();
@@ -102,9 +105,13 @@ class TraktSync:
         Returns: The data retrieved, or false if the request failed.
         """
 
+        tryCount = 0
+
         self._auth_lock.acquire();
-        while not self._auth_token:
+        while not self._auth_token and tryCount < 5:
+            tryCount += 1;
             logger.log("trakt_sync: Waiting on auth token", logger.DEBUG)
+
             if not self._auth_requesting:
                 self._auth_requesting = True;
                 thread = threading.Thread(None, self.requestToken, "TraktAuthorizer");
@@ -113,6 +120,9 @@ class TraktSync:
             self._auth_lock.wait();
         self._auth_lock.release();
 
+        if tryCount >= 5:
+            ui.notifications.error("Trakt", "Failed to authenticate, please check your settings.")
+            return False;
 
         logger.log("trakt_sync: Call method " + method, logger.DEBUG)
 
