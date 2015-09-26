@@ -110,7 +110,7 @@ class TraktSync:
 
         for show in showList:
             if show.stay_ahead > 0:
-                sqlResults = myDB.select("SELECT season, episode, name FROM tv_episodes set status = ? and episode_id IN (select ep.episode_id from tv_episodes ep left join trakt_data trakt on trakt.showid = ep.showid where ep.showid = ? AND ep.season > 0 AND ((trakt.next_season IS NULL) OR (trakt.next_season > -1 AND ((ep.season > trakt.next_season) OR (ep.season = trakt.next_season AND ep.episode >= trakt.next_episode)))) order by ep.season ASC, ep.episode ASC limit ?)", [WAITING, show.tvdbid, show.stay_ahead]);
+                sqlResults = myDB.select("SELECT season, episode, name FROM tv_episodes WHERE status = ? and episode_id IN (select ep.episode_id from tv_episodes ep left join trakt_data trakt on trakt.showid = ep.showid where ep.showid = ? AND ep.season > 0 AND ((trakt.next_season IS NULL) OR (trakt.next_season > -1 AND ((ep.season > trakt.next_season) OR (ep.season = trakt.next_season AND ep.episode >= trakt.next_episode)))) order by ep.season ASC, ep.episode ASC limit ?)", [WAITING, show.tvdbid, show.stay_ahead]);
                 if len(sqlResults) > 0:
                     myDB.action("UPDATE tv_episodes set status = ? where status = ? and episode_id IN (select ep.episode_id from tv_episodes ep left join trakt_data trakt on trakt.showid = ep.showid where ep.showid = ? AND ep.season > 0 AND ((trakt.next_season IS NULL) OR (trakt.next_season > -1 AND ((ep.season > trakt.next_season) OR (ep.season = trakt.next_season AND ep.episode >= trakt.next_episode)))) order by ep.season ASC, ep.episode ASC limit ?)", [WANTED, WAITING, show.tvdbid, show.stay_ahead])
 
