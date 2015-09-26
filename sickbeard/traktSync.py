@@ -24,6 +24,7 @@ import sickbeard
 from sickbeard import logger
 from sickbeard import db
 from sickbeard import trakt
+from sickbeard import search_queue
 
 from common import WANTED, WAITING
 
@@ -31,7 +32,7 @@ class TraktSync:
     """
     A synchronizer for trakt.tv which keeps track of which episode has and hasn't been watched.
     """
-    
+
     def __init__(self):
         self.amActive = False
 
@@ -39,7 +40,7 @@ class TraktSync:
         return sickbeard.USE_TRAKT and sickbeard.USE_TRAKT_SYNC
 
     def updateWatchedData(self):
-        
+
         self.amActive = True
 
         method = "users/me/history/episodes"
@@ -106,17 +107,19 @@ class TraktSync:
     def updateEpisodesToAutoDownload(self):
         myDB = db.DBConnection()
         showList = list(sickbeard.showList)
-        updatedShows = []
 
         for show in showList:
             if show.stay_ahead > 0:
-                cursor = myDB.action("UPDATE tv_episodes set status = ? where status = ? and episode_id IN (select ep.episode_id from tv_episodes ep left join trakt_data trakt on trakt.showid = ep.showid where ep.showid = ? AND ep.season > 0 AND ((trakt.next_season IS NULL) OR (trakt.next_season > -1 AND ((ep.season > trakt.next_season) OR (ep.season = trakt.next_season AND ep.episode >= trakt.next_episode)))) order by ep.season ASC, ep.episode ASC limit ?)", [WANTED, WAITING, show.tvdbid, show.stay_ahead])
-                if cursor.rowcount > 0:
-                    updatedShows.append(show)
-                    logger.log(str(cursor.rowcount) + " episodes of " + show.name + " queued for download.")
+                sqlResults = myDB.select("SELECT season, episode, name FROM tv_episodes set status = ? and episode_id IN (select ep.episode_id from tv_episodes ep left join trakt_data trakt on trakt.showid = ep.showid where ep.showid = ? AND ep.season > 0 AND ((trakt.next_season IS NULL) OR (trakt.next_season > -1 AND ((ep.season > trakt.next_season) OR (ep.season = trakt.next_season AND ep.episode >= trakt.next_episode)))) order by ep.season ASC, ep.episode ASC limit ?)", [WAITING, show.tvdbid, show.stay_ahead]);
+                if len(sqlResults) > 0:
+                    myDB.action("UPDATE tv_episodes set status = ? where status = ? and episode_id IN (select ep.episode_id from tv_episodes ep left join trakt_data trakt on trakt.showid = ep.showid where ep.showid = ? AND ep.season > 0 AND ((trakt.next_season IS NULL) OR (trakt.next_season > -1 AND ((ep.season > trakt.next_season) OR (ep.season = trakt.next_season AND ep.episode >= trakt.next_episode)))) order by ep.season ASC, ep.episode ASC limit ?)", [WANTED, WAITING, show.tvdbid, show.stay_ahead])
 
-        if updatedShows:
-            sickbeard.backlogSearchScheduler.action.searchBacklog(updatedShows) #@UndefinedVariable
+                    for row in sqlResults:
+                        ep = show.getEpisode(int(row["season"]), int(row["episode"]))
+                        logger.log(show.name + ": Episode " + ep.prettyName() + " queued for download due to StayAhead policies.")
+
+                        queue_item = search_queue.ManualSearchQueueItem(ep)
+                        sickbeard.searchQueueScheduler.action.add_item(queue_item) #@UndefinedVariable
 
         logger.log("Synchronization complete.")
         self.amActive = False
