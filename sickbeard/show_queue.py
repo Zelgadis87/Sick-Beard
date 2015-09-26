@@ -329,6 +329,8 @@ class QueueItemAdd(ShowQueueItem):
         self.show.populateCache()
 
         self.show.flushEpisodes()
+        
+        sickbeard.traktSyncScheduler.forceRun()
 
         self.finish()
 
