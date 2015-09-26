@@ -352,9 +352,9 @@ NMJv2_DBLOC = None
 
 USE_TRAKT = False
 USE_TRAKT_SYNC = True
-TRAKT_USERNAME = None
-TRAKT_PASSWORD = None
-TRAKT_API = ''
+TRAKT_API_ACCESS_TOKEN = None
+TRAKT_API_REFRESH_TOKEN = None
+TRAKT_API_EXPIRATION_TOKEN = None
 
 USE_PYTIVO = False
 PYTIVO_NOTIFY_ONSNATCH = False
@@ -399,7 +399,7 @@ def initialize(consoleLogging=True):
                 NZBGET_PASSWORD, NZBGET_CATEGORY, NZBGET_HOST, currentSearchScheduler, backlogSearchScheduler, \
                 USE_XBMC, XBMC_NOTIFY_ONSNATCH, XBMC_NOTIFY_ONDOWNLOAD, XBMC_UPDATE_FULL, XBMC_UPDATE_ONLYFIRST, \
                 XBMC_UPDATE_LIBRARY, XBMC_HOST, XBMC_USERNAME, XBMC_PASSWORD, \
-                USE_TRAKT, USE_TRAKT_SYNC, TRAKT_USERNAME, TRAKT_PASSWORD, TRAKT_API, traktSyncScheduler, \
+                USE_TRAKT, USE_TRAKT_SYNC, TRAKT_API_ACCESS_TOKEN, TRAKT_API_REFRESH_TOKEN, TRAKT_API_EXPIRATION_TOKEN, TRAKT_API_PIN_URL, traktSyncScheduler, \
                 USE_PLEX, PLEX_NOTIFY_ONSNATCH, PLEX_NOTIFY_ONDOWNLOAD, PLEX_UPDATE_LIBRARY, \
                 PLEX_SERVER_HOST, PLEX_HOST, PLEX_USERNAME, PLEX_PASSWORD, \
                 showUpdateScheduler, __INITIALIZED__, LAUNCH_BROWSER, HIDE_TVSHOW_STATUS, showList, loadingShowList, \
@@ -591,10 +591,10 @@ def initialize(consoleLogging=True):
         TORRENTLEECH = bool(check_setting_int(CFG, 'TORRENTLEECH', 'torrentleech', 0))
         TORRENTLEECH_USERNAME = check_setting_str(CFG, 'TORRENTLEECH', 'torrentleech_username', '')
         TORRENTLEECH_PASSWORD = check_setting_str(CFG, 'TORRENTLEECH', 'torrentleech_password', '')
-        
+
         TORRENTDAY = bool(check_setting_int(CFG, 'TORRENTDAY', 'torrentday', 0))    
         TORRENTDAY_ALT_URL = bool(check_setting_int(CFG, 'TORRENTDAY', 'torrentday_alt_url', 0))
-        TORRENTDAY_USERNAME = check_setting_str(CFG, 'TORRENTDAY', 'torrentday_username', '')   
+        TORRENTDAY_USERNAME = check_setting_str(CFG, 'TORRENTDAY', 'torrentday_username', '')
         TORRENTDAY_PASSWORD = check_setting_str(CFG, 'TORRENTDAY', 'torrentday_password', '')
 
         SCENEACCESS = bool(check_setting_int(CFG, 'SCENEACCESS', 'sceneaccess', 0))
@@ -611,7 +611,7 @@ def initialize(consoleLogging=True):
         BITHDTV = bool(check_setting_int(CFG, 'BITHDTV', 'bithdtv', 0))
         BITHDTV_USERNAME = check_setting_str(CFG, 'BITHDTV', 'bithdtv_username', '')
         BITHDTV_PASSWORD = check_setting_str(CFG, 'BITHDTV', 'bithdtv_password', '')
-        
+
         TORRENTSHACK = bool(check_setting_int(CFG, 'TORRENTSHACK', 'torrentshack', 0))
         TORRENTSHACK_USERNAME = check_setting_str(CFG, 'TORRENTSHACK', 'torrentshack_username', '')
         TORRENTSHACK_PASSWORD = check_setting_str(CFG, 'TORRENTSHACK', 'torrentshack_password', '')
@@ -624,14 +624,14 @@ def initialize(consoleLogging=True):
         SPEED_USERNAME = check_setting_str(CFG, 'SPEED', 'speed_username', '')
         SPEED_PASSWORD = check_setting_str(CFG, 'SPEED', 'speed_password', '')
         SPEED_RSSHASH = check_setting_str(CFG, 'SPEED', 'speed_rsshash', '')
-        
+
         REVOLUTIONTT = bool(check_setting_int(CFG, 'REVOLUTIONTT', 'revolutiontt', 0))
         REVOLUTIONTT_USERNAME = check_setting_str(CFG, 'REVOLUTIONTT', 'revolutiontt_username', '')
         REVOLUTIONTT_PASSWORD = check_setting_str(CFG, 'REVOLUTIONTT', 'revolutiontt_password', '')
         REVOLUTIONTT_RSSHASH = check_setting_str(CFG, 'REVOLUTIONTT', 'revolutiontt_rsshash', '')
-        
+
         BTDIGG = bool(check_setting_int(CFG, 'BTDIGG', 'btdigg', 0))
-        
+
         GIT_PATH = check_setting_str(CFG, 'General', 'git_path', '')
         IGNORE_WORDS = check_setting_str(CFG, 'General', 'ignore_words', IGNORE_WORDS)
         EXTRA_SCRIPTS = [x.strip() for x in check_setting_str(CFG, 'General', 'extra_scripts', '').split('|') if x.strip()]
@@ -764,7 +764,7 @@ def initialize(consoleLogging=True):
         PUSHBULLET_NOTIFY_ONDOWNLOAD = bool(check_setting_int(CFG, 'Pushbullet', 'pushbullet_notify_ondownload', 0))
         PUSHBULLET_APIKEY = check_setting_str(CFG, 'Pushbullet', 'pushbullet_apikey', '')
         PUSHBULLET_DEVICE = check_setting_str(CFG, 'Pushbullet', 'pushbullet_device', '')
-        
+
         CheckSection(CFG, 'Libnotify')
         USE_LIBNOTIFY = bool(check_setting_int(CFG, 'Libnotify', 'use_libnotify', 0))
         LIBNOTIFY_NOTIFY_ONSNATCH = bool(check_setting_int(CFG, 'Libnotify', 'libnotify_notify_onsnatch', 0))
@@ -788,9 +788,10 @@ def initialize(consoleLogging=True):
         CheckSection(CFG, 'Trakt')
         USE_TRAKT = bool(check_setting_int(CFG, 'Trakt', 'use_trakt', 0))
         USE_TRAKT_SYNC = bool(check_setting_int(CFG, 'Trakt', 'use_trakt_sync', 0))
-        TRAKT_USERNAME = check_setting_str(CFG, 'Trakt', 'trakt_username', '')
-        TRAKT_PASSWORD = check_setting_str(CFG, 'Trakt', 'trakt_password', '')
-        TRAKT_API = check_setting_str(CFG, 'Trakt', 'trakt_api', '')
+        TRAKT_API_ACCESS_TOKEN = check_setting_str(CFG, 'Trakt', 'trakt_access_token', '')
+        TRAKT_API_REFRESH_TOKEN = check_setting_str(CFG, 'Trakt', 'trakt_refresh_token', '')
+        TRAKT_API_EXPIRATION_TOKEN = check_setting_int(CFG, 'Trakt', 'trakt_expiration_token', 0)
+        TRAKT_API_PIN_URL = check_setting_str(CFG, 'Trakt', 'trakt_pin_url', "http://trakt.tv/pin/1270")
 
         CheckSection(CFG, 'pyTivo')
         USE_PYTIVO = bool(check_setting_int(CFG, 'pyTivo', 'use_pytivo', 0))
@@ -1259,7 +1260,7 @@ def save_config():
     new_config['BITHDTV']['bithdtv'] = int(BITHDTV)
     new_config['BITHDTV']['bithdtv_username'] = BITHDTV_USERNAME
     new_config['BITHDTV']['bithdtv_password'] = BITHDTV_PASSWORD
-    
+
     new_config['TORRENTSHACK'] = {}
     new_config['TORRENTSHACK']['torrentshack'] = int(TORRENTSHACK)
     new_config['TORRENTSHACK']['torrentshack_username'] = TORRENTSHACK_USERNAME
@@ -1274,23 +1275,23 @@ def save_config():
     new_config['SPEED']['speed_username'] = SPEED_USERNAME
     new_config['SPEED']['speed_password'] = SPEED_PASSWORD
     new_config['SPEED']['speed_rsshash'] = SPEED_RSSHASH
-    
+
     new_config['REVOLUTIONTT'] = {}
     new_config['REVOLUTIONTT']['revolutiontt'] = int(REVOLUTIONTT)
     new_config['REVOLUTIONTT']['revolutiontt_username'] = REVOLUTIONTT_USERNAME
     new_config['REVOLUTIONTT']['revolutiontt_password'] = REVOLUTIONTT_PASSWORD
     new_config['REVOLUTIONTT']['revolutiontt_rsshash'] = REVOLUTIONTT_RSSHASH
-    
+
     new_config['BTDIGG'] = {}
     new_config['BTDIGG']['btdigg'] = int(BTDIGG)
-    
+
     new_config['THEPIRATEBAY'] = {}
     new_config['THEPIRATEBAY']['thepiratebay'] = int(THEPIRATEBAY)
     new_config['THEPIRATEBAY']['thepiratebay_trusted'] = int(THEPIRATEBAY_TRUSTED)
     new_config['THEPIRATEBAY']['thepiratebay_proxy'] = int(THEPIRATEBAY_PROXY)
     new_config['THEPIRATEBAY']['thepiratebay_proxy_url'] = THEPIRATEBAY_PROXY_URL
     new_config['THEPIRATEBAY']['thepiratebay_url_override'] = THEPIRATEBAY_URL_OVERRIDE
-    
+
     new_config['BTN'] = {}
     new_config['BTN']['btn'] = int(BTN)
     new_config['BTN']['btn_api_key'] = BTN_API_KEY
@@ -1389,7 +1390,7 @@ def save_config():
     new_config['Pushbullet']['pushbullet_notify_ondownload'] = int(PUSHBULLET_NOTIFY_ONDOWNLOAD)
     new_config['Pushbullet']['pushbullet_apikey'] = PUSHBULLET_APIKEY
     new_config['Pushbullet']['pushbullet_device'] = PUSHBULLET_DEVICE
-    
+
     new_config['Libnotify'] = {}
     new_config['Libnotify']['use_libnotify'] = int(USE_LIBNOTIFY)
     new_config['Libnotify']['libnotify_notify_onsnatch'] = int(LIBNOTIFY_NOTIFY_ONSNATCH)
@@ -1413,9 +1414,9 @@ def save_config():
     new_config['Trakt'] = {}
     new_config['Trakt']['use_trakt'] = int(USE_TRAKT)
     new_config['Trakt']['use_trakt_sync'] = int(USE_TRAKT_SYNC)
-    new_config['Trakt']['trakt_username'] = TRAKT_USERNAME
-    new_config['Trakt']['trakt_password'] = TRAKT_PASSWORD
-    new_config['Trakt']['trakt_api'] = TRAKT_API
+    new_config['Trakt']['trakt_access_token'] = TRAKT_API_ACCESS_TOKEN
+    new_config['Trakt']['trakt_refresh_token'] = TRAKT_API_REFRESH_TOKEN
+    new_config['Trakt']['trakt_expiration_token'] = TRAKT_API_EXPIRATION_TOKEN
 
     new_config['pyTivo'] = {}
     new_config['pyTivo']['use_pytivo'] = int(USE_PYTIVO)

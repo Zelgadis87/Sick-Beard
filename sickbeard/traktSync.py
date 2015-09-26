@@ -18,145 +18,32 @@
 
 
 import time
-import urllib2
-import threading
-
-from lib import dateutil
 from lib.dateutil import parser
 
-try:
-    import json
-except ImportError:
-    from lib import simplejson as json
-
 import sickbeard
-
 from sickbeard import logger
 from sickbeard import db
-from sickbeard import ui
+from sickbeard import trakt
 
-from common import DOWNLOADED, SNATCHED, SNATCHED_PROPER, ARCHIVED, IGNORED, UNAIRED, WANTED, SKIPPED, UNKNOWN, WAITING
+from common import WANTED, WAITING
 
 class TraktSync:
     """
     A synchronizer for trakt.tv which keeps track of which episode has and hasn't been watched.
     """
-
+    
     def __init__(self):
-        self._auth_lock = threading.Condition();
-        self._auth_token = None;
-        self._auth_client = None;
-        self._auth_requesting = False;
-        self._trakt_api_url = "https://api.trakt.tv/";
-
-    def _username(self):
-        return sickbeard.TRAKT_USERNAME
-
-    def _password(self):
-        return sickbeard.TRAKT_PASSWORD
-
-    def _api(self):
-        return sickbeard.TRAKT_API
+        self.amActive = False
 
     def _use_me(self):
         return sickbeard.USE_TRAKT and sickbeard.USE_TRAKT_SYNC
 
-    def requestToken(self):
-        """Invoked by a custom thread to acquire a valid trakt token, to use for
-        all the following requests"""
-        self._auth_lock.acquire();
-
-        data = {};
-        data["login"] = self._username();
-        data["password"] = self._password();
-
-        request_url = self._trakt_api_url + "auth/login";
-        request = urllib2.Request(request_url);
-        request.add_header("content-type", "application/json");
-        request.add_header("trakt-api-version", 2);
-        request.add_header("trakt-api-key", self._api());
-        request.add_header("trakt-user-login", self._username());
-
-        request.add_data(json.dumps(data));
-
-        try:
-            logger.log("trakt_sync: Authenticating ...", logger.DEBUG)
-            stream = urllib2.urlopen(request, timeout=120)
-
-            self._auth_token = json.loads(stream.read())["token"];
-        except (IOError), e:
-            logger.log("trakt_sync: Failed to authenticate: " + e.message, logger.ERROR)
-            time.sleep(5)
-
-        self._auth_requesting = False
-        self._auth_lock.notify_all();
-        self._auth_lock.release();
-
-    def _sendToTrakt(self, method, api = None, username = None, password = None, data = None, requires_auth = False):
-        """
-        A generic method for communicating with trakt. Uses the method along
-        with the auth info to send the command.
-
-        method: The URL to use at trakt, relative, no leading slash.
-        api: The API string to provide to trakt
-        username: The username to use when logging in
-        password: The unencrypted password to use when logging in
-
-        Returns: The data retrieved, or false if the request failed.
-        """
-
-        tryCount = 0
-
-        self._auth_lock.acquire();
-        while not self._auth_token and tryCount < 5:
-            tryCount += 1;
-            logger.log("trakt_sync: Waiting on auth token", logger.DEBUG)
-
-            if not self._auth_requesting:
-                self._auth_requesting = True;
-                thread = threading.Thread(None, self.requestToken, "TraktAuthorizer");
-                thread.start();
-
-            self._auth_lock.wait();
-        self._auth_lock.release();
-
-        if tryCount >= 5:
-            ui.notifications.error("Trakt", "Failed to authenticate, please check your settings.")
-            return False;
-
-        logger.log("trakt_sync: Call method " + method, logger.DEBUG)
-
-        request_url = self._trakt_api_url + method;
-        request = urllib2.Request(request_url);
-        request.add_header("content-type", "application/json");
-        request.add_header("trakt-api-version", 2);
-        request.add_header("trakt-api-key", self._api());
-        request.add_header("trakt-user-token", self._auth_token);
-        request.add_header("trakt-user-login", self._username());
-
-        encoded_data = "";
-        if data:
-            encoded_data = json.dumps(data);
-            request.add_data(encoded_data);
-
-        # request the URL from trakt and parse the result as json
-        try:
-            logger.log("trakt_sync: Calling method http://api.trakt.tv/" + method + ", with data" + encoded_data, logger.DEBUG)
-            stream = urllib2.urlopen(request, timeout = 60)
-            resp = json.loads(stream.read())
-
-            if ("error" in resp):
-                raise Exception(resp["error"])
-
-        except (IOError), e:
-            logger.log("trakt_sync: Failed calling method: " + e.message, logger.ERROR)
-            return False
-
-        return resp
-
     def updateWatchedData(self):
-        method = "users/" + self._username() + "/history/episodes"
-        response = self._sendToTrakt(method)
+        
+        self.amActive = True
+
+        method = "users/me/history/episodes"
+        response = trakt.sendData(method);
 
         if response != False:
             changes = dict();
@@ -189,9 +76,10 @@ class TraktSync:
 
             logger.log(message)
 
-            self.updateNextEpisodeData();
         else:
             logger.log("Watched episodes synchronization failed.")
+
+        self.updateNextEpisodeData();
 
     def updateNextEpisodeData(self):
 
@@ -228,9 +116,10 @@ class TraktSync:
                     logger.log(str(cursor.rowcount) + " episodes of " + show.name + " queued for download.")
 
         if updatedShows:
-            sickbeard.backlogSearchScheduler.action.searchBacklog(updatedShows)
+            sickbeard.backlogSearchScheduler.action.searchBacklog(updatedShows) #@UndefinedVariable
 
         logger.log("Synchronization complete.")
+        self.amActive = False
 
     def run(self):
         self.updateWatchedData()

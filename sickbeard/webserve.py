@@ -41,6 +41,7 @@ from sickbeard import encodingKludge as ek
 from sickbeard import search_queue
 from sickbeard import image_cache
 from sickbeard import naming
+from sickbeard import trakt
 
 from sickbeard.providers import newznab
 from sickbeard.common import Quality, Overview, statusStrings
@@ -1137,12 +1138,12 @@ class ConfigProviders:
         else:
             thepiratebay_url_override_enable = 0
             sickbeard.THEPIRATEBAY_URL_OVERRIDE = ""
-            
+
         sickbeard.KICKASS_ALT_URL = kickass_alt_url.strip()
- 
+
         sickbeard.TORRENTLEECH_USERNAME = torrentleech_username
         sickbeard.TORRENTLEECH_PASSWORD = torrentleech_password
-        
+
         if sickbeard.TORRENTDAY_ALT_URL == "on":
             sickbeard.TORRENTDAY_ALT_URL = 1
         else:
@@ -1161,7 +1162,7 @@ class ConfigProviders:
 
         sickbeard.BITHDTV_USERNAME = bithdtv_username.strip()
         sickbeard.BITHDTV_PASSWORD = bithdtv_password.strip()
-        
+
         sickbeard.TORRENTSHACK_USERNAME = torrentshack_username.strip()
         sickbeard.TORRENTSHACK_PASSWORD = torrentshack_password.strip()
         sickbeard.TORRENTSHACK_UID = torrentshack_uid.strip()
@@ -1227,7 +1228,7 @@ class ConfigNotifications:
                           use_libnotify=None, libnotify_notify_onsnatch=None, libnotify_notify_ondownload=None,
                           use_nmj=None, nmj_host=None, nmj_database=None, nmj_mount=None, use_synoindex=None,
                           use_nmjv2=None, nmjv2_host=None, nmjv2_dbloc=None, nmjv2_database=None,
-                          use_trakt=None, use_trakt_sync=None, trakt_username=None, trakt_password=None, trakt_api=None,
+                          use_trakt=None, use_trakt_sync=None,
                           use_pytivo=None, pytivo_notify_onsnatch=None, pytivo_notify_ondownload=None, pytivo_update_library=None,
                           pytivo_host=None, pytivo_share_name=None, pytivo_tivo_name=None,
                           use_nma=None, nma_notify_onsnatch=None, nma_notify_ondownload=None, nma_api=None, nma_priority=0 ):
@@ -1301,7 +1302,7 @@ class ConfigNotifications:
         sickbeard.PUSHBULLET_NOTIFY_ONDOWNLOAD = config.checkbox_to_value(pushbullet_notify_ondownload)
         sickbeard.PUSHBULLET_APIKEY = pushbullet_apikey
         sickbeard.PUSHBULLET_DEVICE = pushbullet_device
-        
+
         sickbeard.USE_BOXCAR = config.checkbox_to_value(use_boxcar)
         sickbeard.BOXCAR_NOTIFY_ONSNATCH = config.checkbox_to_value(boxcar_notify_onsnatch)
         sickbeard.BOXCAR_NOTIFY_ONDOWNLOAD = config.checkbox_to_value(boxcar_notify_ondownload)
@@ -1320,9 +1321,6 @@ class ConfigNotifications:
 
         sickbeard.USE_TRAKT = config.checkbox_to_value(use_trakt)
         sickbeard.USE_TRAKT_SYNC = config.checkbox_to_value(use_trakt_sync)
-        sickbeard.TRAKT_USERNAME = trakt_username
-        sickbeard.TRAKT_PASSWORD = trakt_password
-        sickbeard.TRAKT_API = trakt_api
 
         sickbeard.save_config()
 
@@ -2041,17 +2039,17 @@ class Home:
     @cherrypy.expose
     def Pushbullet_retriveDevices(self,apiKey=None):
         cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        
+
         result = notifiers.pushbullet_notifier._retriveDevices(apiKey)
         if result:
             return result
         else:
             return None
-    
-    @cherrypy.expose   
+
+    @cherrypy.expose
     def testPushbullet(self,apiKey=None,device=None):
         cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        
+
         result = notifiers.pushbullet_notifier.test_notify(apiKey,device)
         if result:
             return "Pushbullet notification succeeded. Check your Pushbullet clients to make sure it worked"
@@ -2173,6 +2171,18 @@ class Home:
             return '{"message": "Unable to find NMJ Database at location: %(dbloc)s. Is the right location selected and PCH running?", "database": ""}' % {"dbloc": dbloc}
 
     @cherrypy.expose
+    def authorizeTrakt(self, pin):
+        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
+
+        result = trakt.authenticate(pin);
+        if result:
+            sickbeard.save_config();
+            return '{"result": true, "access_token": "' + sickbeard.TRAKT_API_ACCESS_TOKEN + '", "refresh_token": "' + sickbeard.TRAKT_API_REFRESH_TOKEN + '"}';
+        else:
+            return '{"result": false}';
+
+    """
+    @cherrypy.expose
     def testTrakt(self, api=None, username=None, password=None):
         cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
 
@@ -2180,7 +2190,7 @@ class Home:
         if result:
             return "Test notice sent successfully to Trakt"
         else:
-            return "Test notice failed to Trakt"
+            return "Test notice failed to Trakt" """
 
     @cherrypy.expose
     def testNMA(self, nma_api=None, nma_priority=0):

@@ -34,7 +34,7 @@ import boxcar
 import nma
 
 import tweet
-import trakt
+import traktNotifier
 
 from sickbeard.common import *
 
@@ -55,7 +55,7 @@ boxcar_notifier = boxcar.BoxcarNotifier()
 nma_notifier = nma.NMA_Notifier()
 # online
 twitter_notifier = tweet.TwitterNotifier()
-trakt_notifier = trakt.TraktNotifier()
+trakt_notifier = traktNotifier.TraktNotifier()
 
 notifiers = [
     libnotify_notifier, # Libnotify notifier goes first because it doesn't involve blocking on network activity.

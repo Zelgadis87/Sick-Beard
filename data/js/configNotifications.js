@@ -2,7 +2,7 @@ $(document).ready(function () {
     var loading = '<img src="' + sbRoot + '/images/loading16.gif" height="16" width="16" />';
 
     /*************************** Pushbullet ***************************/
-    
+
     if (!$("#pushbullet_apikey").val()) {
         $("#divbullet_devices").hide();
     }
@@ -10,21 +10,21 @@ $(document).ready(function () {
         PushBullet_Select();
         $( "#divbullet_devices" ).show();
     }
-    
+
     function PushBullet_Select() {
         var pushbullet_apikey = $("#pushbullet_apikey").val();
         var pushbullet_device = $("#pushbullet_device").val();
         var $select = $('#bullet_devices');
-        
-        $.getJSON(sbRoot + "/home/Pushbullet_retriveDevices",  {'apiKey': pushbullet_apikey}, function(data){    
+
+        $.getJSON(sbRoot + "/home/Pushbullet_retriveDevices",  {'apiKey': pushbullet_apikey}, function(data){
             //clear the current content of the select
             $select.html('');
-            
+
             //populate first value with blank value
             if (data.devices.length) {
                 $select.append('<option value="">All Devices</option>');
             }
-            
+
             //iterate over the data and append a select option
             $.each(data.devices, function(key, val){
                 $select.append('<option value="' + val.iden + '">' + val.nickname + '</option>');
@@ -45,7 +45,7 @@ $(document).ready(function () {
             $('#divbullet_devices').show("slow");
         }
     });
-        
+
     $('#testPushbullet').click(function ()
     {
         $('#testPushbullet-result').html(loading);
@@ -55,9 +55,9 @@ $(document).ready(function () {
             function (data)
             { $('#testPushbullet-result').html(data); });
     });
-    
+
     /*************************** EOF Pushbullet ***************************/
-    
+
     $('#testGrowl').click(function () {
         $('#testGrowl-result').html(loading);
         var growl_host = $("#growl_host").val();
@@ -134,6 +134,23 @@ $(document).ready(function () {
             function (data) { $('#testTwitter-result').html(data); });
     });
 
+    $('#authorizeTrakt').click(function() {
+    $('#testTrakt-result').text('Authenticating...');
+        var pin = $('#trakt_pin').val();
+        if (pin && pin.trim().length == 8) {
+            $.post(sbRoot + '/home/authorizeTrakt', {'pin': pin},
+                function (ret) {
+                    var data = JSON.parse(ret);
+                    $('#trakt_access_token').val(data.result ? data.access_token : '');
+                    $('#trakt_refresh_token').val(data.result ? data.refresh_token : '');
+                    $('#testTrakt-result').text(data.result ? 'Authorized' : 'Not Authorized');
+                    $('#trakt_pin').val('');
+                });
+        } else {
+            $('#testTrakt-result').text('Invalid PIN inserted.');
+        }
+    });
+
     $('#settingsNMJ').click(function () {
         if (!$('#nmj_host').val()) {
             alert('Please fill in the Popcorn IP address');
@@ -203,7 +220,7 @@ $(document).ready(function () {
             var JSONData = $.parseJSON(data);
             $('#testNMJv2-result').html(JSONData.message);
             $('#nmjv2_database').val(JSONData.database);
-            
+
             if (JSONData.database) {
                 $('#nmjv2_database').attr('readonly', true);
             } else {
@@ -215,19 +232,9 @@ $(document).ready(function () {
     $('#testNMJv2').click(function () {
         $('#testNMJv2-result').html(loading);
         var nmjv2_host = $("#nmjv2_host").val();
-        
+
         $.get(sbRoot + "/home/testNMJv2", {'host': nmjv2_host},
             function (data){ $('#testNMJv2-result').html(data); });
-    });
-
-    $('#testTrakt').click(function () {
-        $('#testTrakt-result').html(loading);
-        var trakt_api = $("#trakt_api").val();
-        var trakt_username = $("#trakt_username").val();
-        var trakt_password = $("#trakt_password").val();
-
-        $.get(sbRoot + "/home/testTrakt", {'api': trakt_api, 'username': trakt_username, 'password': trakt_password},
-            function (data) { $('#testTrakt-result').html(data); });
     });
 
     $('#testNMA').click(function () {
